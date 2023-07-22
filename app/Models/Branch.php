@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Branch extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'branch';
 
@@ -19,17 +20,24 @@ class Branch extends Model
         'branch_address',
         'phone',
         'branch_head',
+        'company_id',
     ];
 
     protected $dates = ['deleted_at'];
 
-    public function owner () 
-    {
-        return $this->belongsTo('App\User', 'owner_id');
-    }
-
     public function branchHead () 
     {
-        return $this->belongsTo('App\User', 'branch_head');
+        return $this->belongsTo('App\Models\User', 'id', 'branch_head');
     }
+
+    public function company () 
+    {
+        return $this->belongsTo('App\Models\Company', 'company_id', 'id');
+    }
+
+    public function transactions () 
+    {
+        return $this->hasMany('App\Models\Transaction', 'branch_id', 'id');
+    }
+    
 }

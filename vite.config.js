@@ -1,6 +1,11 @@
 import { defineConfig, loadEnv } from 'vite';
 import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
+import dotenv from 'dotenv';
+
+dotenv.config({
+  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env.development',
+});
 
 export default ({mode}) => {
     process.env = {...process.env, ...loadEnv(mode, process.cwd())}

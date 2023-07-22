@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\TransactionsController;
+use App\Http\Controllers\TopnavController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -17,36 +22,27 @@ use Inertia\Inertia;
 |
 */
 Route::middleware('auth')->group(function () {
-    $user = session('user_object');
     
-    Route::get('/', function () {
-        $user = session('user_object');
-        return Inertia::render('Dashboard', [
-            /*'canLogin' => Route::has('login'),
-            'canRegister' => Route::has('register'),
-            'laravelVersion' => Application::VERSION,
-            'phpVersion' => PHP_VERSION,*/
-            "user" => $user,
-            "company" => $user->company,
-        ]);
-    });
+    Route::get('/', [DashboardController::class, 'index']);
     
-    Route::get('/dashboard', function () use (&$user) {  
-        dd($user);
-        return Inertia::render('Dashboard', [
-            "user" => $user,
-            "company" => $user->company,
-        ]); 
-    })->name("dashboard"); 
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name("dashboard"); 
 
-    Route::get('/products', function () { })->name('products');
+    Route::get('/products', [ProductController::class, 'index'])->name('products');
 
-    Route::get('/branches', function () { })->name('branches');
+    Route::get('/products/get/{companyId}', [ProductController::class, 'getProducts'])->name('products.get');
 
+    Route::get('/product/get/{productId}', [ProductController::class, 'getProduct'])->name('product.get');
+
+    Route::post('/product/create', [ProductController::class, 'create'])->name('product.create');
+
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
+
+    Route::get('/transactions', [TransactionsController::class, 'index'])->name('transactions');
+
+    Route::get('/branches', [TopnavController::class, 'getBranches']);
+
+    Route::post('/branch/change/{branchId}', [TopnavController::class, 'changeBranch'])->name('branch.change');
 });
-
-
-
 
 
 //->middleware(['auth'])

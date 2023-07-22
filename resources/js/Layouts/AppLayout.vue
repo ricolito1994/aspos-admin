@@ -1,18 +1,23 @@
 <script setup>
 import TopNav from "@/Components/TopNav.vue";
 import SideNav from "@/Components/SideNav.vue";
+import LoadingComponent from "@/Components/LoadingComponent.vue";
+
+defineProps({
+    catchChangeBranch : {
+        type: Function,
+    }
+})
+
+
 </script>
 <template>
+    <LoadingComponent></LoadingComponent>
     <div id="body-container">
-        <TopNav></TopNav>
+        <TopNav @catchChangeBranch="catchChangeBranch"></TopNav>
+        <SideNav></SideNav>
         <div id="app-container">
-            <SideNav></SideNav>
-            <div id="main-container">
-                <div class="container-pane">
-                    <slot />
-                </div>
-            </div>
-            <div style="clear:both"></div>
+            <slot />
         </div>
     </div>
 </template>
@@ -21,16 +26,27 @@ import SideNav from "@/Components/SideNav.vue";
         position:absolute;
         height:100%;
         width: 100%;
+        overflow:hidden;
     }
     #app-container {
-        position: relative;
-        width:100%;
-        height:94%;
+        padding:1%;
+        margin-left: 0;
+        margin-right: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        flex-grow: 1;
+        height:94.7%;
+        max-height: 100%;
+        border:1px solid #ccc;
+        overflow-y:auto;
     }
     #main-container {
         position: relative;
-        float:right;
-        height: 100%;
+        /*float:right;*/
+        top: -20px;
+        left: 280px;
+        height: 105.5%;
         width: 85%;
         padding: 1%;
     }

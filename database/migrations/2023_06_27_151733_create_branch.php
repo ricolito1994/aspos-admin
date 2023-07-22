@@ -15,10 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('branch_name');
             $table->string('branch_address');
-            $table->string('branch_head')->nullable();
+            $table->string('branch_code')->unique();
+            $table->string('branch_head')->references('id')->on('users')->nullable();
             $table->string('phone')->nullable();
-            $table->string('company_id');
-            $table->string('owner_id');
+            $table->string('company_id')->references('id')->on('company');
+            $table->string('owner_id')->references('id')->on('users');
             $table->softDeletes();
             $table->timestamps();
         });

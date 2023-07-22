@@ -21,8 +21,10 @@ return new class extends Migration
             $table->string('password');
             $table->string('designation');
             $table->string('phone');
-            $table->string('company_id');
-            $table->string('branch_id')->nullable();
+            $table->string('company_id')->references('id')->on('company');
+            $table->string('branch_id')->references('id')->on('branch')->nullable();
+            $table->string('selected_branch')->references('id')->on('branch')->nullable();
+            $table->boolean('is_owner');
             $table->rememberToken();
             $table->softDeletes();
             $table->timestamps();

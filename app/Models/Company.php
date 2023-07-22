@@ -17,14 +17,26 @@ class Company extends Model
 
     protected $fillable = [
         'company_name',
+        'company_code',
         'address',
-        'owner_id',
     ];
 
     protected $dates = ['deleted_at'];
 
-    public function owner () 
+    public function owners () 
     {
-        return $this->belongsTo('App\Models\User', 'owner_id');
+        return $this->hasMany('App\Models\User', 'company_id', 'id')
+                    ->where('is_owner', true);
     }
+
+    public function employees () 
+    {
+        return $this->hasMany('App\Models\User', 'company_id', 'id');
+    }
+
+    public function branches () 
+    {
+        return $this->hasMany('App\Models\Branch', 'company_id', 'id');
+    }
+   
 }

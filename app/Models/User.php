@@ -52,17 +52,39 @@ class User extends Authenticatable implements CanResetPasswordContract
 
     protected $dates = ['deleted_at'];
 
-
-
-    protected function company () 
+    public function company () 
     {
-        return $this->hasOne('App\Models\Company', 'id');
+        return $this->belongsTo('App\Models\Company', 'company_id', 'id');
     }
 
-    protected function branch () 
+    public function branch () 
     {
-        return $this->hasOne('App\Models\Branch', 'id');
+        return $this->hasOne('App\Models\Branch', 'id', 'branch_id');
     }
 
+    public function selectedBranch () 
+    {
+        return $this->hasOne('App\Models\Branch', 'id', 'selected_branch');
+    }
+
+    public function isBranchHead () 
+    {
+        return $this->hasOne('App\Models\Branch', 'branch_head', 'id');
+    }
+
+    public function transactions () 
+    {
+        return $this->hasMany('App\Models\Transaction', 'user_id', 'id');
+    }
+
+    public function productEntry () 
+    {
+        return $this->hasMany('App\Models\Product', 'user_id', 'id');
+    }
+
+    public function supplierEntry () 
+    {
+        return $this->hasMany('App\Models\Supploer', 'user_id', 'id');
+    }
 
 }

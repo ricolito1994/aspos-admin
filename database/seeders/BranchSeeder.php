@@ -18,10 +18,22 @@ class BranchSeeder extends Seeder
     {
         $data = array(
             array(
-                'branch_name' => 'Bago City Public Market',
-                'branch_address' => 'Bago City, Philippines',
+                'branch_name' => 'Four B Hardware',
+                'branch_address' => 'Bago City Public Market, Bago City, Philippines',
+                'branch_code' => '4B',
                 'owner_id' => 1,
                 'company_id' => 1,
+                'branch_head' => 1,
+                'updated_at' => Carbon::now(),
+                'created_at' => Carbon::now(),
+            ),
+            array(
+                'branch_name' => 'Alongside Hardware',
+                'branch_address' => 'General Luna St., Bago City, Philippines',
+                'branch_code' => 'AH',
+                'owner_id' => 1,
+                'company_id' => 1,
+                'branch_head' => 2,
                 'updated_at' => Carbon::now(),
                 'created_at' => Carbon::now(),
             ),

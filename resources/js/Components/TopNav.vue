@@ -1,7 +1,15 @@
 <script setup>
-import NavLink from '@/Components/NavLink.vue';
+import Dropdown from './Dropdown.vue';
 
-const user = JSON.parse(localStorage.getItem('user'));
+import { getBranches, changeBranch } from '@/Services/ServerRequests';
+import { onMounted, ref } from 'vue';
+
+let user = ref(JSON.parse(localStorage.getItem('user')));
+let companyObject = ref(JSON.parse(localStorage.getItem('company')));
+let branches = ref ([]);
+let selected_branch = ref({});
+let displayDropdown = ref(false);
+
 
 defineProps({
     company: {
@@ -11,64 +19,69 @@ defineProps({
         type: Object,
     },
 });
+
+const emit = defineEmits(['catchChangeBranch']);
+
+onMounted(() => loadbranches())
+
+
+const loadbranches = async () => {
+    let data = await getBranches();
+    selected_branch.value = data.data.selected_branch;
+    localStorage.setItem('selected_branch', JSON.stringify(data.data.selected_branch))
+    branches.value = data.data.branches;
+};
+
+const selectBranch = async ( ) => {
+    let data = await changeBranch(selected_branch.value.id);
+    selected_branch.value = data.data.selected_branch;
+    localStorage.setItem('selected_branch', JSON.stringify(data.data.selected_branch))
+    emit('catchChangeBranch', selected_branch.value)
+}
+
+const toggleDisplayDropdown = ( ) => {
+    displayDropdown.value = !displayDropdown.value;
+}
+
+const onCloseDropDown = ( ) => {
+    displayDropdown.value = false;
+}
+
+const dropDownMenuButton = ref(null);
+
 </script>
 <template>
     <div id="top-nav-bar"> 
-        <div id="top-left-bar">
-            <div align="center">
-                <B>4B HARDWARE</B>
+        <div style="height:100%;width:100%;">
+            <div style="width:20%;float:left">
+                <div style="margin-top:8.5px;float:right;">
+                    <B>BRANCH</B>&nbsp;&nbsp;
+                </div>
+            </div>
+            <div style="width:40%;float:left;">
+                <select @change="selectBranch" v-model="selected_branch.id" style="border:1px solid #ccc;width:100%;">
+                    <option v-for="(branch, index) in branches" :key="index" :value="branch.id">{{ branch.branch_name }} - {{ branch.branch_address }}</option>
+                </select>
+            </div>
+            <div style="width:40%;float:right">
+                <div style="float:right;">
+                    <div style="margin-top:8.5px; display:flex; justify-content: space-between; ">
+                        <div style="align-self:center;padding-right:12px;" ref="dropDownMenuButton">
+                            <button @click="toggleDisplayDropdown">{{ user.name }} <span style="font-size:12px;">🔻</span></button>
+                        </div>
+                        <Dropdown :dropDownMenuButton="dropDownMenuButton" :onCloseDropDown="onCloseDropDown" :displayDropdown="displayDropdown" v-if="displayDropdown"></Dropdown>
+                    </div>
+                </div>
             </div>
         </div>
-        <div id="top-right-bar">
-            <div id="main-top-nav-bar">
-               
-            </div>
-            <div id="secondary-top-nav-bar">
-                <NavLink :href="route('dashboard')" :active="false">{{ user.name }}</NavLink>
-                &nbsp;
-                <NavLink :href="route('logout')" method="post" :active="false">LOGOUT</NavLink>
-            </div>
-            <div style="clear:both"></div>
-        </div>
-        <div style="clear:both"></div>
     </div>
 </template>
 <style scoped>
     #top-nav-bar {
         position:relative;
-        width:100%;
-        height:6%;
-        border-bottom: 1px solid #ccc;
-    }
-    
-    #top-left-bar {
-        position:relative;
-        float:left;
-        width:15%;
-        height:100%;
-    }
-
-    #top-right-bar {
-        position:relative;
-        float:right;
-        width:85%;
-        height:100%;
-    }
-
-    #top-right-bar > div , #top-left-bar > div {
-        position:relative;
-        top:25%;
-    }
-
-    #main-top-nav-bar {
-        position:relative;
-        float:left;
-        width:80%;
-    }
-
-    #secondary-top-nav-bar {
-        position:relative;
-        float:right;
-        width:20%;
+        width: calc(100% - 280px);
+        height:50px;
+        left:280px;
+        padding:3px 2% 3px 2%;
     }
 </style>

@@ -26,6 +26,21 @@ class UserAdminSeeder extends Seeder
                 'password' => Hash::make('4bhardwareadmin'),
                 'designation' => 1, // 1 as admin
                 'company_id' => 1,
+                'is_owner' => 1,
+                'selected_branch' => 1,
+                'updated_at' => Carbon::now(),
+                'created_at' => Carbon::now(),
+            ),
+            array(
+                'name' => 'Paolo Baylon',
+                'email' => 'paolo.baylon@4bhardware.com',
+                'phone' => '09507199111',
+                'username' => '4badminpos1',
+                'password' => Hash::make('4bhardwareadmin'),
+                'designation' => 1, // 1 as admin
+                'company_id' => 1,
+                'is_owner' => 1,
+                'selected_branch' => 1,
                 'updated_at' => Carbon::now(),
                 'created_at' => Carbon::now(),
             ),
