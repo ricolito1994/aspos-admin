@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        //
         Schema::table('unit', function (Blueprint $table) {
-           // $table->string('product_id')->nullable()->change();
+            //
+            //$table->dropColumn('price_list_id');
+            //$table->unsignedBigInteger('price_list_id')->references('id')->on('unit')->onDelete('cascade');
         });
     }
 
@@ -22,9 +23,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
-        Schema::table('unit', function (Blueprint $table) {
-           // $table->string('product_id')->change();
+        Schema::table('pricelist', function (Blueprint $table) {
+            //
+            //$table->unsignedBigInteger('price_list_id')->references('id')->on('suppliers')->onDelete('cascade');
         });
     }
 };

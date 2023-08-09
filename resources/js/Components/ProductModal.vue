@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onUnmounted, ref, reactive } from 'vue';
+import { onMounted, onUnmounted, ref, reactive, watch } from 'vue';
 import { saveProduct } from '@/Services/ServerRequests';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
@@ -15,21 +15,23 @@ const props = defineProps({
 const userObject = ref(JSON.parse(localStorage.getItem('user')));
 const companyObject = reactive(JSON.parse(localStorage.getItem('company')));
 const product = reactive(props.productObject);
+const branch = reactive(props.branchObject);
 const defaultProdMenu = ref(0);
 const alphaNumeric = ref('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 const title = ref('')
+const isUpdate = ref(false);
 
 let priceList = reactive([
     {
         pricelist_name: 'DEFAULT PRICE',
         is_default : true,
         company_id : companyObject.id,
-        branch_id : 1,
+        branch_id : branch.id,
         unit : [
             {
                 unit_name : 'PIECE',
                 parent_quantity : 1,
-                branch_id : 1,
+                branch_id : branch.id,
                 heirarchy : 1,
                 price_per_unit : 0.0,
                 cost_per_unit : 0.0,
@@ -42,24 +44,26 @@ let priceList = reactive([
 const emit = defineEmits(['closeProductModal', 'onAddProduct'])
 
 const newPriceList = ( ) => {
+    let isDefault = priceList.length == 0;
     priceList.push({
         pricelist_name: `PRICE # ${priceList.length}`,
-        is_default : false,
+        is_default : isDefault,
         company_id : companyObject.id,
-        branch_id : 1,
+        branch_id : branch.id,
         unit : [
             {
                 unit_name : 'PIECE',
                 parent_quantity : 1,
-                branch_id : 1,
+                branch_id : branch.id,
                 heirarchy : 1,
                 price_per_unit : 0.0,
                 cost_per_unit : 0.0,
-                is_default: false,
+                is_default: isDefault,
             }
         ],
     })
-    priceList[priceList.length - 1].is_default = false;
+    if(!isDefault)
+        priceList[priceList.length - 1].is_default = false;
 }
 
 const removePricelist = (priceListIndex) => {
@@ -83,6 +87,9 @@ const save = async () => {
         product : product,
         prices : priceList,
     });
+
+    newProduct.data['isUpdate'] = isUpdate.value;
+   
     emit('onAddProduct', newProduct.data)
 }
 
@@ -121,6 +128,11 @@ const newUnit = (priceIndex, unitIndex) => {
 }
 
 const setToDefaultPrice = (priceIndex) => {
+    if (priceList.length == 1 || !priceList[priceIndex].is_default) {
+        priceList[priceIndex].is_default = true;
+        return;
+    }
+
     for (let i in priceList) {
         if (priceIndex!==parseInt(i)) {
             priceList[i].is_default = false ;
@@ -136,7 +148,7 @@ const setToDefaultPrice = (priceIndex) => {
 
 
 onMounted (() => {
-    console.log(product)
+    isUpdate.value = !product.id ? true : false;
     if (!product.id) {
         product.product_code = genarateProductCode()
         title.value = "NEW PRODUCT";
@@ -149,6 +161,10 @@ onMounted (() => {
 
 onUnmounted (() => {
     // IF MODAL CLOSES
+})
+
+watch (priceList, (oldval, newval) => {
+    //console.log(oldval, newval)
 })
 
 </script>
@@ -200,7 +216,7 @@ onUnmounted (() => {
                 </div>
             </div>
         </div>
-        <div class="prod-m-main-form" v-if="defaultProdMenu == 1">
+        <div class="prod-m-main-form scrollbar" v-if="defaultProdMenu == 1">
             <div style="width:100%;">
                 <PrimaryButton :additionalStyles="'background: #f05340'" @click=newPriceList()>+ NEW PRICE LIST</PrimaryButton>
                 &nbsp;<b>Remember: </b> these prices are only available in <b>{{ branchObject.branch_name }}</b>.
@@ -280,7 +296,6 @@ onUnmounted (() => {
                                         <PrimaryButton :additionalStyles="'background: #86e17b;'" @click=newUnit(priceIndex,unitIndex)>+</PrimaryButton>
                                     </td>
                                 </tr>
-                                
                             </tbody>
                         </table>
                     </div>

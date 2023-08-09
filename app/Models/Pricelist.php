@@ -15,6 +15,8 @@ class Pricelist extends Model
 
     protected $primary_key = 'id';
 
+    protected $onDelete = 'cascade';
+
     protected $fillable = [
         'pricelist_name',
         'product_id',
@@ -22,6 +24,8 @@ class Pricelist extends Model
         'branch_id',
         'is_default',
     ];
+
+    protected $cascadeSoftDeletes = ['unit'];
 
     protected $casts = [
         'is_default' => 'boolean',
@@ -40,6 +44,13 @@ class Pricelist extends Model
     public function supplier () 
     {
         return $this->belongsTo('App\Models\Supplier', 'id', 'supplier_id');
+    }
+
+    protected static function booted (): void 
+    {
+        static::deleting(function(Pricelist $pricelist) { 
+            $pricelist->unit()->delete();
+        });
     }
 
 }

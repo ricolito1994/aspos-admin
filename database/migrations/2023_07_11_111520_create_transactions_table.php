@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('transaction_code')->unique();
             $table->string('transaction_type');
             $table->boolean('stock');
+            $table->date('transaction_date')->nullable();
             $table->longText('transaction_desc')->nullable();
             $table->float('total_price', 8, 2)->nullable();
             $table->float('total_cost', 8, 2)->nullable();

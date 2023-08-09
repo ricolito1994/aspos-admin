@@ -34,6 +34,10 @@ class Product extends Model
         return $this->hasMany('App\Models\Pricelist', 'product_id', 'id');
     }
 
+    public function unit () 
+    {
+        return $this->hasMany('App\Models\Unit', 'product_id', 'id');
+    }
 
     public function transactions () 
     {

@@ -29,7 +29,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/products', [ProductController::class, 'index'])->name('products');
 
-    Route::get('/products/get/{companyId}', [ProductController::class, 'getProducts'])->name('products.get');
+    Route::get('/products/get/{companyId}/{searchString?}', [ProductController::class, 'getProducts'])->name('products.get');
 
     Route::get('/product/get/{productId}', [ProductController::class, 'getProduct'])->name('product.get');
 
@@ -37,7 +37,15 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
 
+    
     Route::get('/transactions', [TransactionsController::class, 'index'])->name('transactions');
+
+    Route::get('/transaction/get/{transactionId}', [TransactionsController::class, 'getTransaction'])->name('transaction.get');
+
+    Route::get('/transaction/get/{companyId}/{searchString?}/{transFrom}/{transTo}', [TransactionsController::class, 'getTransactions'])->name('transactions.get');
+
+    Route::post('/transaction/save', [TransactionsController::class, 'saveTransaction'])->name('transaction.save');
+
 
     Route::get('/branches', [TopnavController::class, 'getBranches']);
 

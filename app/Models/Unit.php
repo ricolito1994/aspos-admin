@@ -14,6 +14,8 @@ class Unit extends Model
 
     protected $primary_key = 'id';
 
+    protected $onDelete = 'cascade';
+
     protected $fillable = [
         'unit_name',
         'parent_quantity',

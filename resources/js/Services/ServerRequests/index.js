@@ -78,8 +78,22 @@ export function saveProduct ( product ) {
 }
 
 
-export function getProducts ( company_id ) {
-    let productsRequest = axiosLoading.get(`${host}/products/get/${company_id}`);
+export function getProducts ( company_id , searchString ) {
+    searchString = searchString ? searchString : false;
+    let productsRequest = axiosLoading.get(`${host}/products/get/${company_id}/${searchString}`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+export function getProducts1 ( company_id , searchString ) {
+    searchString = searchString ? searchString : false;
+    let productsRequest = axios.get(`${host}/products/get/${company_id}/${searchString}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -93,6 +107,45 @@ export function getProducts ( company_id ) {
 
 export function getProduct ( product_id ) {
     let productsRequest = axiosLoading.get(`${host}/product/get/${product_id}`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+
+export function getTransaction (transactionId) {
+    let productsRequest = axiosLoading.get(`${host}/transaction/get/${transactionId}`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+
+export function getTransactions (company_id, searchString, transFrom, transTo) {
+    searchString = searchString ? searchString : false;
+    let productsRequest = axiosLoading.get(`${host}/transaction/get/${company_id}/${searchString}/${transFrom}/${transTo}`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+export function saveTransaction (transaction) {
+    let productsRequest = axiosLoading.post(`${host}/transaction/save`, transaction);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)

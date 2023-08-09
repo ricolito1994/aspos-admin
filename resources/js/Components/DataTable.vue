@@ -38,7 +38,7 @@ let selectedPage = ref(1);
 </script>
 <template>
     <div id="table-container">
-        <div id="main-table">
+        <div id="main-table" class="scrollbar">
             <table>
                 <thead>
                     <tr>
