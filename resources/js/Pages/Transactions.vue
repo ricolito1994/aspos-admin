@@ -21,7 +21,7 @@ const userObject = ref(JSON.parse(localStorage.getItem('user')));
 const companyObject = ref(JSON.parse(localStorage.getItem('company')));
 const branchObject = ref(JSON.parse(localStorage.getItem('selected_branch')));
 
-let transaction = ref({
+const tempTransaction = {
     transaction_code : '',
     transaction_type : 'SALE',
     stock : false,
@@ -33,7 +33,9 @@ let transaction = ref({
     branch_id : branchObject.value.id,
     user_id : userObject.value.id,
     company_id : companyObject.value.id,
-});
+}
+
+const transaction = ref(tempTransaction);
 
 const props = defineProps({
     user: {
@@ -48,8 +50,19 @@ const props = defineProps({
 
 
 onMounted ( async () => {
-    //let transaction = await getTransaction(companyObject.value.id);
-    //resultData.value = transaction.data;
+    let transaction = await getTransactions(
+        companyObject.value.id,
+        branchObject.value.id,
+        searchString.value,
+        transactionDateFrom.value,
+        transactionDateTo.value,
+    );
+    resultData.value = transaction.data.res;
+})
+
+onUnmounted(()=>{
+    // unmount webhook
+    // if element is destroyed
 })
 
 /* const showProductModal =  async ( product ) => {
@@ -91,18 +104,30 @@ const searchTransactions = async ( reset ) => {
         transactionDateTo.value = nextMonth;
     }
 
-    let transactions = await getTransactions(companyObject.value.id, searchString.value, transactionDateFrom.value, transactionDateTo.value);
-    resultData.value = transactions.data;
+    let transactions = await getTransactions(
+        companyObject.value.id, 
+        branchObject.value.id,
+        searchString.value, 
+        transactionDateFrom.value, 
+        transactionDateTo.value
+    );
+    resultData.value = transactions.data.res;
 }
 
-const showTransactionModal = () => {
+const showTransactionModal = async (t) => {
+    if(typeof t == 'object') {
+        let tres = await getTransaction (t.id);
+        transaction.value = tres.data.res;
+    } else {
+        //
+        transaction.value = tempTransaction;
+    }
     isShowTransactionModal.value = !isShowTransactionModal.value;
 }
 
 
 /*const onOpenProductDialog = ( ) => {
 }*/
-
 
 
 const tableHeaders = ref([
@@ -150,7 +175,7 @@ const tableHeaders = ref([
 <template>
     <Head title="Dashboard" />
     <AppLayout :catchChangeBranch="catchChangeBranch">
-        <Modal :show=isShowTransactionModal @close="showTransactionModal" @onDialogDisplay="null" extraWidth="max-width:80rem">
+        <Modal :show=isShowTransactionModal @close="showTransactionModal" @onDialogDisplay="null" extraWidth="max-width:90rem">
             <TransactionModal :transaction="transaction" :branchObject="branchObject" @closeTransactionModal="showTransactionModal" @onAddTransaction=onAddTransaction />
         </Modal>
 

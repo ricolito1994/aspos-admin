@@ -131,9 +131,9 @@ export function getTransaction (transactionId) {
 }
 
 
-export function getTransactions (company_id, searchString, transFrom, transTo) {
+export function getTransactions (company_id, branch_id, searchString, transFrom, transTo) {
     searchString = searchString ? searchString : false;
-    let productsRequest = axiosLoading.get(`${host}/transaction/get/${company_id}/${searchString}/${transFrom}/${transTo}`);
+    let productsRequest = axiosLoading.get(`${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)

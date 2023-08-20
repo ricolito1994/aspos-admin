@@ -28,6 +28,7 @@ return new class extends Migration
             $table->string('company_id')->references('id')->on('company');
             $table->string('supplier')->references('id')->on('suppliers');
             $table->boolean('stock');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

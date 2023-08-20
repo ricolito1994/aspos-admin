@@ -13,6 +13,9 @@ const props = defineProps({
     itemIndex : {
         type: Number,
         default: 0,
+    },
+    itmName : {
+        type: String,
     }
 })
 
@@ -27,7 +30,7 @@ const showResults = ref(false);
 
 let results = ref([]);
 
-const searchString = ref("");
+const searchString = ref(props.itmName);
 
 const emit = defineEmits(['onSelectItem']);
 

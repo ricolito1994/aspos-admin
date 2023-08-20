@@ -42,9 +42,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/transaction/get/{transactionId}', [TransactionsController::class, 'getTransaction'])->name('transaction.get');
 
-    Route::get('/transaction/get/{companyId}/{searchString?}/{transFrom}/{transTo}', [TransactionsController::class, 'getTransactions'])->name('transactions.get');
+    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom}/{transTo}', [TransactionsController::class, 'getTransactions'])->name('transactions.get');
 
-    Route::post('/transaction/save', [TransactionsController::class, 'saveTransaction'])->name('transaction.save');
+    Route::post('/transaction/save', [TransactionsController::class, 'createTransaction'])->name('transaction.save');
 
 
     Route::get('/branches', [TopnavController::class, 'getBranches']);

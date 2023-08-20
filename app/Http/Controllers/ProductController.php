@@ -100,27 +100,27 @@ class ProductController extends Controller
                     ->where('company_id', $companyId);
             }
 
-            $products->with('transactions', function($query) use ($user) {
-                $query->where('branch_id', $user->selected_branch);
-                $query->max('id');
-            })
-            ->with('pricelist', function($query) use ($user) {
-                $query->where('is_default', 1);
-                $query->where('branch_id', $user->selected_branch);
-            });
+            $products
+                ->with('transactions', function($query) use ($user) {
+                    $query->where('branch_id', $user->selected_branch);
+                    $query->max('id');
+                })
+                ->with('pricelist', function($query) use ($user) {
+                    $query->where('is_default', 1);
+                    $query->where('branch_id', $user->selected_branch);
+                });
 
             $productsRes = $products->orderBy('id', 'DESC')->get();
             
             foreach ($productsRes as $k => $p) {
-                //var_dump($p->unit[0]->unit_name);
-                //exit;
-                $remainingBalance = count($p['transactions']) > 0 ? $p['transactions'][0]['remaining_balance'] : 0;
+                
+                $remainingBalance = count($p['transactions']) > 0 ? $p['transactions'][count($p['transactions']) - 1]['remaining_balance'] : 0;
                 $unit_obj = [];
                 $unitRemainingBal = '-';
 
                 if (count($p['transactions']) > 0) {
                     $unit = Unit::where([
-                        ['id', $p['transactions'][0]['unit_id']],
+                        ['id', $p['transactions'][count($p['transactions']) - 1]['unit_id']],
                         ['branch_id', $user->selected_branch],
                     ])->first();
                     $unitRemainingBal = $unit->unit_name;

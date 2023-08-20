@@ -19,6 +19,7 @@ class Transaction extends Model
         'transaction_type',
         'stock',
         'transaction_desc',
+        'transaction_date',
         'user_id',
         'supplier_id',
         'branch_id',
@@ -39,7 +40,7 @@ class Transaction extends Model
         return $this->belongsTo('App\Models\Company', 'id', 'company_id');
     }
 
-    public function details () 
+    public function itemDetails () 
     {
         return $this->hasMany('App\Models\TransactionDetail', 'transaction_id', 'id');
     }

@@ -40,9 +40,9 @@ class TransactionDetail extends Model
         return $this->hasMany('App\Models\Unit', 'id', 'unit_id');
     }
 
-    public function products () 
+    public function product () 
     {
-        return $this->hasMany('App\Models\Product', 'id', 'product_id');
+        return $this->belongsTo('App\Models\Product', 'product_id', 'id');
     }
 
     public function transaction () 
