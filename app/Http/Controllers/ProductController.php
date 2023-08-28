@@ -102,8 +102,10 @@ class ProductController extends Controller
 
             $products
                 ->with('transactions', function($query) use ($user) {
+                    $query->with('transaction');
                     $query->where('branch_id', $user->selected_branch);
-                    $query->max('id');
+                    $query->orderBy('id', 'DESC');
+                    //$query->max('id');
                 })
                 ->with('pricelist', function($query) use ($user) {
                     $query->where('is_default', 1);
@@ -114,13 +116,13 @@ class ProductController extends Controller
             
             foreach ($productsRes as $k => $p) {
                 
-                $remainingBalance = count($p['transactions']) > 0 ? $p['transactions'][count($p['transactions']) - 1]['remaining_balance'] : 0;
+                $remainingBalance = count($p['transactions']) > 0 ? $p['transactions'][0]['remaining_balance'] : 0;
                 $unit_obj = [];
                 $unitRemainingBal = '-';
 
                 if (count($p['transactions']) > 0) {
                     $unit = Unit::where([
-                        ['id', $p['transactions'][count($p['transactions']) - 1]['unit_id']],
+                        ['id', $p['transactions'][0]['unit_id']],
                         ['branch_id', $user->selected_branch],
                     ])->first();
                     $unitRemainingBal = $unit->unit_name;

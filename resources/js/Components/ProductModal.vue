@@ -2,6 +2,7 @@
 import { onMounted, onUnmounted, ref, reactive, watch } from 'vue';
 import { saveProduct } from '@/Services/ServerRequests';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
+import DataTable from '@/Components/DataTable.vue';
 
 const props = defineProps({
     productObject : {
@@ -39,6 +40,34 @@ let priceList = reactive([
             }
         ],
     }
+]);
+
+const tableHeaders = ref([
+    {
+        name : 'DATE',
+        field : 'created_at',
+    },
+    {
+        name : 'TRANSACTION TYPE',
+        field : 'transaction_type',
+    },
+    {
+        name : 'STOCK',
+        field : 'stock',
+    },
+    {
+        name : 'UNIT',
+        field : 'unit',
+    },
+    {
+        name : 'QTY',
+        field : 'quantity',
+    },
+    {
+        name : 'BALANCE',
+        style: 'width:169px',
+        field : 'remaining_balance',
+    },
 ]);
 
 const emit = defineEmits(['closeProductModal', 'onAddProduct'])
@@ -149,6 +178,7 @@ const setToDefaultPrice = (priceIndex) => {
 
 onMounted (() => {
     isUpdate.value = !product.id ? true : false;
+    console.log(product)
     if (!product.id) {
         product.product_code = genarateProductCode()
         title.value = "NEW PRODUCT";
@@ -182,7 +212,7 @@ watch (priceList, (oldval, newval) => {
         <div id="product-menu">
             <PrimaryButton :additionalStyles="defaultProdMenu == 0 ? 'background: #f05340' : ''" @click=prodMenuSelect(0)>PRODUCT DETAILS</PrimaryButton>&nbsp;
             <PrimaryButton :additionalStyles="defaultProdMenu == 1 ? 'background: #f05340' : ''" @click=prodMenuSelect(1)>PRICE LIST</PrimaryButton>&nbsp;
-            <PrimaryButton :additionalStyles="defaultProdMenu == 2 ? 'background: #f05340' : ''" @click=prodMenuSelect(2)>TRANSACTIONS</PrimaryButton>
+            <PrimaryButton v-if="!isUpdate" :additionalStyles="defaultProdMenu == 2 ? 'background: #f05340' : ''" @click=prodMenuSelect(2)>TRANSACTIONS</PrimaryButton>
         </div>
         <div class="prod-m-main-form" v-if="defaultProdMenu == 0">
             <div style="width:100%;">
@@ -305,6 +335,9 @@ watch (priceList, (oldval, newval) => {
         <div class="prod-m-main-form" v-if="defaultProdMenu == 2">
             <div>
                 Transactions at: <b>{{ branchObject.branch_name }}</b>
+            </div>
+            <div>
+                <DataTable :tableHeaders="tableHeaders" :resultData="product.transactions" />
             </div>
         </div>
     </div>

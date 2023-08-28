@@ -185,7 +185,12 @@ const removeItem = (i) => {
 }
 
 const save = async ( ) => {
-    
+    //console.log(isUpdate.value)
+    if (isUpdate.value) {
+        alert("Cannot edit transaction.")
+        return;
+    }
+
     let transaction = await saveTransaction({
         transaction: transactionObject,
         transactionDetails: transactionDetails,
@@ -207,9 +212,10 @@ watch(
 
 onMounted(()=>{
     // onmounted hook
-     console.log('transactionObject', props.transaction)
+    // console.log('transactionObject', props.transaction)
     // transactionDetails = props.transaction.item_details;
-    // title.value = '';
+    title.value = props.transaction.id ? props.transaction.transaction_code : 'NEW TRANSACTION';
+    isUpdate.value = typeof props.transaction.id !== undefined;
 })
 
 onUnmounted(()=>{
@@ -301,11 +307,11 @@ onUnmounted(()=>{
                     </div>
                     <div style="float:left; width:13%; padding:1%;"> 
                         <select @change="changeUnit(index)" v-model="t.unit_id" type="text" style="width:99%;">
-                            <option v-show='t.units' v-for="(unit, uIndex) in t.units" :value="unit.id">
+                            <option v-if='t.units' v-for="(unit, uIndex) in t.units" :value="unit.id">
                                 {{ unit.unit_name }}
                             </option>
 
-                            <option v-show='t.pp.unit' v-for="(unit, uIndex) in t.pp.unit" :value="unit.id">
+                            <option v-if='t.pp' v-for="(unit, uIndex) in t.pp.unit" :value="unit.id">
                                 {{ unit.unit_name }}
                             </option>
                         </select>

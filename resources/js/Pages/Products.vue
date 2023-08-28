@@ -43,6 +43,7 @@ const showProductModal =  async ( product ) => {
     if(typeof product == 'object') {
         let productRes = await getProduct (product.id);
         productObject.value = productRes.data;
+        productObject.value ['transactions'] = product.transactions;
     } else {
         productObject.value = {
             product_name : '',
@@ -118,11 +119,6 @@ const tableHeaders = ref([
                 label : 'View',
                 func : showProductModal
             },
-            /* delete : {
-                color : 'red',
-                label : 'X Delete',
-                func : deleteProduct
-            } */
         }
     }
 ]);

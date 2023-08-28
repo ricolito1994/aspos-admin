@@ -47,6 +47,6 @@ class TransactionDetail extends Model
 
     public function transaction () 
     {
-        return $this->belongsTo('App\Models\Transaction', 'id', 'transaction_id');
+        return $this->belongsTo('App\Models\Transaction', 'transaction_id', 'id');
     }
 }

@@ -9,7 +9,7 @@ import Modal from '@/Components/Modal.vue';
 import TransactionModal from '@/Components/TransactionModal.vue';
 import moment from 'moment';
 
-const currentDate = moment().format('YYYY-MM-DD');
+const currentDate = moment().startOf('month').format('YYYY-MM-DD');
 const nextMonth = moment(currentDate).add(1, 'M').format('YYYY-MM-DD');
 
 const resultData = ref([]);
