@@ -87,6 +87,7 @@ const catchChangeBranch = (branch) => {
 }
 
 const onAddTransaction = (transaction) => {
+    console.log('transaction ', transaction)
     if (transaction.isUpdate) {
         resultData.value.unshift(transaction);
     } else {
@@ -114,12 +115,11 @@ const searchTransactions = async ( reset ) => {
     resultData.value = transactions.data.res;
 }
 
-const showTransactionModal = async (t) => {
-    if(typeof t == 'object') {
-        let tres = await getTransaction (t.id);
-        transaction.value = tres.data.res;
+const showTransactionModal = async (transactionArgument) => {
+    if(typeof transactionArgument == 'object') {
+        let transactionResult = await getTransaction (transactionArgument.id);
+        transaction.value = transactionResult.data.res;
     } else {
-        //
         transaction.value = tempTransaction;
     }
     isShowTransactionModal.value = !isShowTransactionModal.value;

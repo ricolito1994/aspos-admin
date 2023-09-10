@@ -15,12 +15,13 @@ use DB;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+use Illuminate\Support\Facades\Validator;
+
 class TransactionsController extends Controller
 {
     // inject dependencies, unit converter service maybe
     public function __construct()
     {
-
     }
 
     public function index () 
@@ -38,12 +39,25 @@ class TransactionsController extends Controller
         DB::beginTransaction();
 
         try {
+            
             $req = $request->all();
+
+            $validate = Validator::make($req['transaction'],
+            [
+                'transaction_code' => 'required|string|unique:transactions|max:255',
+            ],
+            [
+                'transaction_code.unique' => 'Transaction code already exists.',
+            ]);
+
+            if ($validate->fails()) {
+                return response()->json(['err'=>$validate->errors()], 500);
+            }
             
             $transactionData = $req['transaction'];
             $transactionDetails = $req['transactionDetails'];
 
-            $omitsToTransaction = ['units','product'];
+            $omitsToTransaction = ['units','product','indx'];
             foreach ($transactionDetails as $j => $td) {
                 foreach ($omitsToTransaction as $k => $omcm) {
                     if(isset($transactionDetails[$j][$omitsToTransaction[$k]]) )
@@ -58,7 +72,7 @@ class TransactionsController extends Controller
             if ($req['isCreate']) {
                 foreach ($transactionDetails as $transactionDetail) {
                     // iterate through transaction details
-                    $transaction->details()->create($transactionDetail);
+                    $transaction->itemDetails()->create($transactionDetail);
                 }
             }
             DB::commit();
@@ -84,6 +98,7 @@ class TransactionsController extends Controller
                
             $transactions = Transaction::where ($conds)
                     ->whereBetween('transaction_date', [$transDateFrom, $transDateTo])
+                    ->orderBy('id', 'ASC')
                     ->get();
             
             return response()->json(['res' => $transactions], 200);

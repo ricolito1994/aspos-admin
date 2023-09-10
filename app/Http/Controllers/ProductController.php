@@ -36,6 +36,16 @@ class ProductController extends Controller
         #dd($data,$prod);
         try {
             $arrPrices = [];
+
+            $validate = Validator::make($prod,
+            [
+                'product_code' => 'required|string|unique:products|max:255',
+                'product_name' => 'required|string|unique:products|max:255',
+            ],
+            [
+                'product_code.unique' => 'Product code already exists.',
+                'product_code.name' => 'Product name already exists.',
+            ]);
             
             $product = Product::updateOrCreate(
                 [

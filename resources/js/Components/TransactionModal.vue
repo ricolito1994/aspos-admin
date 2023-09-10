@@ -27,6 +27,8 @@ const companyObject = ref(JSON.parse(localStorage.getItem('company')));
 
 const transactionObject = reactive(props.transaction);
 
+const alphaNumeric = ref('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+
 const transactionTypes = reactive ({
     'SALE' : {
         stock : false,
@@ -53,6 +55,12 @@ const changeQuantity = (i) => {
     convertQuantities(i);
 }
 
+const randomString = (length, chars) => {
+    let result = '';
+    for (let i = length; i > 0; --i) result += chars[Math.round(Math.random() * (chars.length - 1))];
+    return result;
+}
+
 const changeUnit = (i) => {
     let indexUnit = transactionDetails[i].units.findIndex(x => x.id === transactionDetails[i].unit_id);
     transactionDetails[i].unit = transactionDetails[i].units[indexUnit].unit_name;
@@ -65,6 +73,7 @@ const changeUnit = (i) => {
 const onSelectProduct = async (params) => {
     var prod = await getProduct(params.item.id)
         prod = prod.data;
+    console.log(params.index);
 
     transactionDetails[params.index]['product'] = {
         p: params.item, // from /products/get remaining balance only
@@ -89,7 +98,7 @@ const onSelectProduct = async (params) => {
 
 const convertQuantities = (i) => {
     let p = transactionDetails[i].product;
-    console.log(transactionObject.stock,p.p)
+    if (!p) return;
     let remBal = p.p.remaining_balance;
 
     if (p.p.remaining_balance == 0 && !transactionObject.stock) {
@@ -137,8 +146,6 @@ const convertQuantities = (i) => {
         remBal - transactionDetails[i].quantity: // if stock out (ransactionObject.stock == false), deduct to remaining balance
         remBal + transactionDetails[i].quantity; // if stock in (ransactionObject.stock == true), add to remaining balance
 
-        console.log(cdn , j , ctr , remainingBalance, remBal, transactionDetails[i].quantity)
-
     if (remainingBalance >= 0) {
         transactionDetails[i].remaining_balance = remainingBalance;
     } else {
@@ -176,16 +183,16 @@ const addItem = () => {
         'company_id' : companyObject.value.id,
         'supplier' : 0,
         'stock' : transactionObject.stock,
+        'indx' : randomString(15, alphaNumeric.value),
     })
 }
 
-const removeItem = (i) => {
-    transactionDetails.splice (i, 1);
+const removeItem = (transactionDetailIndex) => {
+    transactionDetails.splice (transactionDetailIndex, 1);
     computeTotals(true);
 }
 
 const save = async ( ) => {
-    //console.log(isUpdate.value)
     if (isUpdate.value) {
         alert("Cannot edit transaction.")
         return;
@@ -194,10 +201,10 @@ const save = async ( ) => {
     let transaction = await saveTransaction({
         transaction: transactionObject,
         transactionDetails: transactionDetails,
-        isCreate : isUpdate.value,
+        isCreate : !isUpdate.value,
     });
-
-    emit('onAddTransaction', transaction.data)
+    transaction.data.res['isUpdate'] = !isUpdate.value;
+    emit('onAddTransaction', transaction.data.res)
 }
 
 
@@ -215,7 +222,10 @@ onMounted(()=>{
     // console.log('transactionObject', props.transaction)
     // transactionDetails = props.transaction.item_details;
     title.value = props.transaction.id ? props.transaction.transaction_code : 'NEW TRANSACTION';
-    isUpdate.value = typeof props.transaction.id !== undefined;
+    props.transaction.stock = props.transaction.stock == 1;
+    isUpdate.value = !props.transaction.id ? false : true;
+    
+    console.log('wwww' , props.transaction.id, isUpdate.value)
 })
 
 onUnmounted(()=>{
@@ -298,41 +308,41 @@ onUnmounted(()=>{
                     </div>
                     <div style="clear:both"></div>
                 </div>
-                <div v-for="(t, index) in transactionDetails" :key="index" style="width:100%;">
+                <div v-for="(transactionDetail, transactionDetailIndex) in transactionDetails" v-bind:key="transactionDetail.indx" style="width:100%;">
                     <div style="float:left; width:20%; padding:1%;">
-                        <TextAutoComplete :getData="getProducts1" itemName="product_name" :itmName="t.pp ? t.pp.product_name : ''" :itemIndex="index" @onSelectItem="onSelectProduct"/>
+                        <TextAutoComplete :getData="getProducts1" itemName="product_name" :itmName="transactionDetail.pp ? transactionDetail.pp.product_name : ''" :itemIndex="transactionDetailIndex" @onSelectItem="onSelectProduct"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input v-model="t.quantity" @keyup="changeQuantity(index)" type="text" style="width:99%;"/>
+                        <input v-model="transactionDetail.quantity" @keyup="changeQuantity(transactionDetailIndex)" type="text" style="width:99%;"/>
                     </div>
                     <div style="float:left; width:13%; padding:1%;"> 
-                        <select @change="changeUnit(index)" v-model="t.unit_id" type="text" style="width:99%;">
-                            <option v-if='t.units' v-for="(unit, uIndex) in t.units" :value="unit.id">
+                        <select @change="changeUnit(transactionDetailIndex)" v-model="transactionDetail.unit_id" type="text" style="width:99%;">
+                            <option v-if='transactionDetail.units' v-for="(unit, uIndex) in transactionDetail.units" :key="uIndex" :value="unit.id">
                                 {{ unit.unit_name }}
                             </option>
 
-                            <option v-if='t.pp' v-for="(unit, uIndex) in t.pp.unit" :value="unit.id">
+                            <option v-if='transactionDetail.pp' v-for="(unit, uIndex) in transactionDetail.pp.unit" :key="uIndex" :value="unit.id">
                                 {{ unit.unit_name }}
                             </option>
                         </select>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input disabled v-model="t.price_per_unit" type="text" style="width:100%;"/>
+                        <input  v-model="transactionDetail.price_per_unit" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input disabled v-model="t.cost_per_unit" type="text" style="width:100%;"/>
+                        <input disabled v-model="transactionDetail.cost_per_unit" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input disabled v-model="t.total_cost" type="text" style="width:100%;"/>
+                        <input disabled v-model="transactionDetail.total_cost" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input disabled v-model="t.total_price" type="text" style="width:100%;"/>
+                        <input disabled v-model="transactionDetail.total_price" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input disabled v-model="t.remaining_balance" type="text" style="width:100%;"/>
+                        <input disabled v-model="transactionDetail.remaining_balance" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:5%; padding:1%;"> 
-                        <PrimaryButton additionalStyles="background:#f05340;" @click=removeItem(index)>X </PrimaryButton>
+                        <PrimaryButton additionalStyles="background:#f05340;" @click=removeItem(transactionDetailIndex)>X</PrimaryButton>
                     </div>
                     <div style="clear:both"></div>
                 </div>
