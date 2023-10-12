@@ -1,6 +1,7 @@
 <script setup>
 import { getTransaction, getTransactions } from '@/Services/ServerRequests';
 import { usePage, Head, Link } from '@inertiajs/vue3';
+import Dropdown from '@/Components/Dropdown.vue'
 import { onMounted, onUnmounted, ref, reactive } from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
@@ -9,14 +10,31 @@ import Modal from '@/Components/Modal.vue';
 import TransactionModal from '@/Components/TransactionModal.vue';
 import moment from 'moment';
 
-const currentDate = moment().startOf('month').format('YYYY-MM-DD');
-const nextMonth = moment(currentDate).add(1, 'M').format('YYYY-MM-DD');
+const props = defineProps({
+    user: {
+        type: Object,
+    },
+    company: {
+        type: Object,
+    },
+});
+
+const currentDate = moment().format('YYYY-MM-DD');
+const nextMonth = moment().format('YYYY-MM-DD');
 
 const resultData = ref([]);
 const searchString = ref("");
 const transactionDateFrom = ref(currentDate);
 const transactionDateTo = ref(nextMonth);
+
 const isShowTransactionModal = ref(false);
+const isShowRefundModal = ref(false);
+const isShowReturnModal = ref(false);
+const isShowStartOfShiftModal = ref(false);
+const isShowEndOfShiftModal = ref(false);
+const isShowDepositCashModal = ref(false);
+const isShowWithrawCashModal = ref(false);
+
 const userObject = ref(JSON.parse(localStorage.getItem('user')));
 const companyObject = ref(JSON.parse(localStorage.getItem('company')));
 const branchObject = ref(JSON.parse(localStorage.getItem('selected_branch')));
@@ -37,17 +55,9 @@ const tempTransaction = {
 
 const transaction = ref(tempTransaction);
 
-const props = defineProps({
-    user: {
-        type: Object,
-    },
-    company: {
-        type: Object,
-    },
-});
+const dropDownMenuButton = ref(null);
 
-
-
+const displayDropdown = ref(false);
 
 onMounted ( async () => {
     let transaction = await getTransactions(
@@ -87,7 +97,6 @@ const catchChangeBranch = (branch) => {
 }
 
 const onAddTransaction = (transaction) => {
-    console.log('transaction ', transaction)
     if (transaction.isUpdate) {
         resultData.value.unshift(transaction);
     } else {
@@ -110,7 +119,7 @@ const searchTransactions = async ( reset ) => {
         branchObject.value.id,
         searchString.value, 
         transactionDateFrom.value, 
-        transactionDateTo.value
+        transactionDateFrom.value
     );
     resultData.value = transactions.data.res;
 }
@@ -125,10 +134,71 @@ const showTransactionModal = async (transactionArgument) => {
     isShowTransactionModal.value = !isShowTransactionModal.value;
 }
 
+const showRefundModal = (transactionArgument) => {
+    isShowRefundModal.value = !isShowRefundModal.value;   
+}
 
-/*const onOpenProductDialog = ( ) => {
-}*/
+const showReturnModal = (transactionArgument) => {
+    isShowReturnModal.value = !isShowReturnModal.value;
+}
 
+const showStartOfShiftModal = (transactionArgument) => {
+    isShowStartOfShiftModal.value = !isShowStartOfShiftModal.value;
+}
+
+const showEndOfShiftModal = (transactionArgument) => {
+    isShowEndOfShiftModal.value = !isShowEndOfShiftModal.value;
+}
+
+const showDepositCashModal = (transactionArgument) => {
+    isShowDepositCashModal.value = !isShowDepositCashModal.value;
+}
+
+const showWithrawCashModal = (transactionArgument) => {
+    isShowWithrawCashModal.value = !isShowWithrawCashModal.value;
+}
+
+
+
+
+const onCloseDropDown = ( ) => {
+    displayDropdown.value = false;
+}
+
+const options = ref([
+    {
+        label : 'Items Transaction',
+        func : () => showTransactionModal(),
+    },
+    {
+        label : `Refund Items`,
+        func : () => showRefundModal()
+    },
+    {
+        label : `Return Items`,
+        func : () => showReturnModal()
+    },
+    {
+        label : `Start of Shift`,
+        func : () => showStartOfShiftModal()
+    },
+    {
+        label : `End of Shift`,
+        func : () => showEndOfShiftModal()
+    },
+    {
+        label : `Deposit Cash Onhand`,
+        func : () => showDepositCashModal()
+    },
+    {
+        label : `Withraw Cash Onhand`,
+        func : () => showWithrawCashModal()
+    },
+]);
+
+const toggleDisplayDropdown = ( ) => {
+    displayDropdown.value = !displayDropdown.value;
+}
 
 const tableHeaders = ref([
     {
@@ -175,8 +245,72 @@ const tableHeaders = ref([
 <template>
     <Head title="Dashboard" />
     <AppLayout :catchChangeBranch="catchChangeBranch">
-        <Modal :show=isShowTransactionModal @close="showTransactionModal" @onDialogDisplay="null" extraWidth="max-width:90rem">
-            <TransactionModal :transaction="transaction" :branchObject="branchObject" @closeTransactionModal="showTransactionModal" @onAddTransaction=onAddTransaction />
+        <Modal 
+            :show=isShowTransactionModal 
+            @close="showTransactionModal" 
+            @onDialogDisplay="null" 
+            extraWidth="max-width:90rem"
+        >
+            <TransactionModal 
+                :transaction="transaction" 
+                :branchObject="branchObject" 
+                @closeTransactionModal="showTransactionModal"
+                @onAddTransaction=onAddTransaction 
+            />
+        </Modal>
+
+        <Modal 
+            :show=isShowRefundModal 
+            @close="showRefundModal" 
+            @onDialogDisplay="null" 
+            extraWidth="max-width:90rem"
+        >
+           
+        </Modal>
+
+        <Modal 
+            :show=isShowReturnModal 
+            @close="showReturnModal" 
+            @onDialogDisplay="null" 
+            extraWidth="max-width:90rem"
+        >
+            
+        </Modal>
+
+        <Modal 
+            :show=isShowStartOfShiftModal
+            @close="showStartOfShiftModal" 
+            @onDialogDisplay="null" 
+            extraWidth="max-width:90rem"
+        >
+           
+        </Modal>
+
+        <Modal 
+            :show=isShowEndOfShiftModal
+            @close="showEndOfShiftModal" 
+            @onDialogDisplay="null" 
+            extraWidth="max-width:90rem"
+        >
+           
+        </Modal>
+
+        <Modal 
+            :show=isShowDepositCashModal 
+            @close="showDepositCashModal" 
+            @onDialogDisplay="null" 
+            extraWidth="max-width:90rem"
+        >
+           
+        </Modal>
+
+        <Modal 
+            :show=isShowWithrawCashModal 
+            @close="showWithrawCashModal" 
+            @onDialogDisplay="null" 
+            extraWidth="max-width:90rem"
+        >
+            
         </Modal>
 
         <div style="background: #F05340;padding:1%; color:#fff;">
@@ -188,23 +322,36 @@ const tableHeaders = ref([
                 <b>SEARCH</b>
             </div>
             <div style="width:30%; float:left;">
-                <input placeholder="DELIVERY RECEIPT / ORIGINAL RECEIPT" v-model="searchString" @change="searchTransactions" type="text" style="width:100%;margin-left:1%;"/>
+                <input placeholder="Transaction Code" v-model="searchString" @change="searchTransactions" type="text" style="width:100%;margin-left:1%;"/>
             </div>
-            <div style="width:5%; float:left;padding-top:0.5%;padding-left:1%;">
-                <b>FROM</b>
+            <div style="width:4%; float:left;padding-top:0.5%;padding-left:1%;">
+                <b>Date</b>
             </div>
-            <div style="width:10%; float:left;">
+            <div style="width:20%; float:left;">
                 <input v-model="transactionDateFrom" @change="searchTransactions" type="date" style="width:100%;margin-left:1%;"/>
             </div>
-            <div style="width:3%; float:left;padding-top:0.5%; padding-left:1%;">
-                <b>TO</b>
-            </div>
-            <div style="width:10%; float:left;">
-                <input v-model="transactionDateTo" @change="searchTransactions" type="date" style="width:100%;margin-left:1%;"/>
-            </div>
+            
             <div style="width:36%; padding-left:1%; float:left;">
-                <PrimaryButton :additionalStyles="'padding:2%;'" @click="showTransactionModal(true)">+ NEW TRANSACTION</PrimaryButton>&nbsp;
-                <PrimaryButton :additionalStyles="'padding:2%;background:#c9b500;'" @click="searchTransactions(true)">- RESET SEARCH</PrimaryButton>
+                <span ref="dropDownMenuButton">
+                    <PrimaryButton 
+                        :additionalStyles="'padding:2%;'" 
+                        @click="toggleDisplayDropdown"
+                    >
+                        + NEW TRANSACTION
+                    </PrimaryButton>&nbsp;
+                </span>
+                <Dropdown 
+                    :options="options" 
+                    :dropDownMenuButton="dropDownMenuButton" 
+                    :onCloseDropDown="onCloseDropDown" 
+                    v-if="displayDropdown"
+                />
+                <PrimaryButton 
+                    :additionalStyles="'padding:2%;background:#c9b500;'" 
+                    @click="searchTransactions(true)"
+                >
+                    - RESET SEARCH
+                </PrimaryButton>
             </div>
         </div>
         

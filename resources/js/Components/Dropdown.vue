@@ -4,6 +4,9 @@ import { Link } from '@inertiajs/vue3';
 import { onMounted, onUnmounted, ref } from 'vue';
 
 const props = defineProps({
+    options : {
+        required:true,
+    },
     displayDropdown : {
         type: Boolean,
     },
@@ -12,7 +15,7 @@ const props = defineProps({
     },
     dropDownMenuButton : {
         type: String,
-    }
+    },
 })
 
 
@@ -26,20 +29,7 @@ onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
 });
 
-const user = ref(JSON.parse(localStorage.getItem('user')));
-
-const options = ref([
-    {
-        href : route('logout'),
-        meth : 'post',
-        label : '🏃 Logout',
-    },
-    {
-        href : route('dashboard'),
-        meth : 'get',
-        label : `🧑 ${user.value.name}`,
-    },
-]);
+const options = ref(props.options);
 
 const handleClickOutside = (event) => {
     if (props.dropDownMenuButton && props.dropDownMenuButton.contains(event.target)) {
@@ -53,7 +43,8 @@ const handleClickOutside = (event) => {
 <template>
     <div class="dropdown-menu" ref="dropdownMenuRef">
         <div class="dropdown-item"  v-for="(option,index) in options" :key="index">
-            <Link :href="option.href" :method="option.meth" :class="classes">{{ option.label }}</Link>
+            <Link v-if="option.href" :href="option.href" :method="option.meth" :class="classes">{{ option.label }}</Link>
+            <a v-else href="javascript:void(0)" @click="option.func(option)">{{ option.label }}</a>
         </div>
     </div>
 </template>
@@ -69,13 +60,12 @@ const handleClickOutside = (event) => {
 
 .dropdown-menu {
   position: absolute;
-  top: 100%;
-  right: 2%;
-  width:200px;
+  width:300px;
   display: block;
   background-color: #fff;
   padding: 8px;
   border: 1px solid #ccc;
+  z-index: 999;
 }
 
 .dropdown-menu.show {

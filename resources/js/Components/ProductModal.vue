@@ -116,9 +116,10 @@ const save = async () => {
         product : product,
         prices : priceList,
     });
-
+    
     newProduct.data['isUpdate'] = isUpdate.value;
-   
+    isUpdate.value = false;
+
     emit('onAddProduct', newProduct.data)
 }
 
@@ -337,7 +338,7 @@ watch (priceList, (oldval, newval) => {
                 Transactions at: <b>{{ branchObject.branch_name }}</b>
             </div>
             <div>
-                <DataTable :tableHeaders="tableHeaders" :resultData="product.transactions" />
+                <!--<DataTable :tableHeaders="tableHeaders" :resultData="product.transactions" />-->
             </div>
         </div>
     </div>

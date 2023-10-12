@@ -42,6 +42,7 @@ axiosLoading.interceptors.response.use(
 );
 
 export function getBranches ( ) {
+    console.log('${host}',host)
     let branches = axiosLoading.get(`${host}/branches`);
     return new Promise ((resolve, reject) => {
         branches.then(res => {

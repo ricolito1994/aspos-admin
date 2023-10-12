@@ -19,6 +19,8 @@ const paginate = (index) => {
     selectedPage.value = index;
 }
 
+props.resultData = props.resultData ? props.resultData : [];
+
 const calculatePaginateButtons = (totalItems, itemsPerPage) => {
     const numberOfButtons = Math.ceil(totalItems / itemsPerPage);
     return numberOfButtons;
@@ -28,7 +30,7 @@ const viewItemDetails = (data) => {
     emit('viewItemDetails', data)
 }
 
-const totalItems = props.resultData.length;
+const totalItems = props.resultData?.length;
 const itemsPerPage = 100;
 
 

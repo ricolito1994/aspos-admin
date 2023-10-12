@@ -1,14 +1,26 @@
 <script setup>
-import Dropdown from './Dropdown.vue';
+import Dropdown from '@/Components/Dropdown.vue';
 
 import { getBranches, changeBranch } from '@/Services/ServerRequests';
+import { reactive } from 'vue';
 import { onMounted, ref } from 'vue';
 
 let user = ref(JSON.parse(localStorage.getItem('user')));
-let companyObject = ref(JSON.parse(localStorage.getItem('company')));
 let branches = ref ([]);
 let selected_branch = ref({});
 let displayDropdown = ref(false);
+const options = ref([
+    {
+        href : route('logout'),
+        meth : 'post',
+        label : '🏃 Logout',
+    },
+    {
+        href : route('dashboard'),
+        meth : 'get',
+        label : `🧑 ${user.value.name}`,
+    },
+]);
 
 
 defineProps({
@@ -69,8 +81,14 @@ const dropDownMenuButton = ref(null);
                         <div style="align-self:center;padding-right:12px;" ref="dropDownMenuButton">
                             <button @click="toggleDisplayDropdown">{{ user.name }} <span style="font-size:12px;">🔻</span></button>
                         </div>
-                        <Dropdown :dropDownMenuButton="dropDownMenuButton" :onCloseDropDown="onCloseDropDown" :displayDropdown="displayDropdown" v-if="displayDropdown"></Dropdown>
                     </div>
+                    <Dropdown 
+                        :options="options" 
+                        :dropDownMenuButton="dropDownMenuButton" 
+                        :onCloseDropDown="onCloseDropDown"
+                        :displayDropdown="displayDropdown" 
+                        v-if="displayDropdown"
+                    />
                 </div>
             </div>
         </div>

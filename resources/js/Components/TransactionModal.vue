@@ -29,6 +29,10 @@ const transactionObject = reactive(props.transaction);
 
 const alphaNumeric = ref('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 
+const amount = ref('0.00');
+
+const change = ref('0.00');
+
 const transactionTypes = reactive ({
     'SALE' : {
         stock : false,
@@ -73,13 +77,17 @@ const changeUnit = (i) => {
 const onSelectProduct = async (params) => {
     var prod = await getProduct(params.item.id)
         prod = prod.data;
-    console.log(params.index);
+
+    if (transactionDetails.find(x=>x.product_code == params.item.product_code)) {
+        alert (`${params.item.product_name} already exists.`);
+        return;
+    }
 
     transactionDetails[params.index]['product'] = {
         p: params.item, // from /products/get remaining balance only
         q: prod, // from /products/get/{id} with pricelist and unit
     };
-
+    transactionDetails[params.index]['product_code'] = prod.product_code
     transactionDetails[params.index].product_id = prod.id;
 
     transactionDetails[params.index].units = prod.pricelist[0].unit;
@@ -139,7 +147,7 @@ const convertQuantities = (i) => {
         }
     }
 
-    transactionDetails[i].quantity = parseFloat(transactionDetails[i].quantity);
+    transactionDetails[i].quantity = isNaN(parseFloat(transactionDetails[i].quantity)) ? 0 : parseFloat(transactionDetails[i].quantity);
     
     let remainingBalance = 
         !transactionObject.stock ? 
@@ -224,8 +232,6 @@ onMounted(()=>{
     title.value = props.transaction.id ? props.transaction.transaction_code : 'NEW TRANSACTION';
     props.transaction.stock = props.transaction.stock == 1;
     isUpdate.value = !props.transaction.id ? false : true;
-    
-    console.log('wwww' , props.transaction.id, isUpdate.value)
 })
 
 onUnmounted(()=>{
@@ -348,13 +354,19 @@ onUnmounted(()=>{
                 </div>
             </div>
             <div style="width:100%;height:10%;">
-                <br>
-                <div style='float:left; width:15%;'>
-                    total price: <b>{{ transactionObject.total_price }}</b> 
+                <div style='float:left; width:25%;'>
+                    total price: <input type="text" v-model="transactionObject.total_price" />
                 </div>
                 
-                <div style='float:left; width:15%;'>
-                    total cost: <b>{{ transactionObject.total_cost }}</b> 
+                <div style='float:left; width:25%;'>
+                    total cost: <input type="text" v-model="transactionObject.total_price" />
+                </div>
+                <div style='float:left; width:25%;'>
+                    amount: <input type="text" v-model="transactionObject.amount_paid" />
+                </div>
+                
+                <div style='float:left; width:25%;'>
+                    change: <input type="text" v-model="transactionObject.change" />
                 </div>
             </div>
         </div>
