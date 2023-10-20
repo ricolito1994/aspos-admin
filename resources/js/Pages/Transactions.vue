@@ -8,6 +8,17 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DataTable from '@/Components/DataTable.vue';
 import Modal from '@/Components/Modal.vue';
 import TransactionModal from '@/Components/TransactionModal.vue';
+import DepositCashModal from '@/Components/DepositCashModal.vue';
+import WithrawCashModal from '@/Components/WithrawCashModal.vue';
+import StartOfShiftModal from '@/Components/StartOfShiftModal.vue';
+import EndOfShiftModal from '@/Components/EndOfShiftModal.vue';
+import RefundTransactionModal from '@/Components/RefundTransactionModal.vue';
+import ReturnItemsModal from '@/Components/ReturnItemsModal.vue';
+import {
+    TRANSACTION_MODAL_CONSTANTS,
+    IS_VAT,
+    VAT_PERCENT,
+} from '@/Constants'
 import moment from 'moment';
 
 const props = defineProps({
@@ -41,7 +52,8 @@ const branchObject = ref(JSON.parse(localStorage.getItem('selected_branch')));
 
 const tempTransaction = {
     transaction_code : '',
-    transaction_type : 'SALE',
+    item_transaction_type : 'DELIVERY',
+    transaction_type: TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.value,
     stock : false,
     transaction_desc: 'a transaction',
     transaction_date : currentDate,
@@ -51,6 +63,12 @@ const tempTransaction = {
     branch_id : branchObject.value.id,
     user_id : userObject.value.id,
     company_id : companyObject.value.id,
+    amt_received: 0.00,
+    final_amt_received: 0.00,
+    discount_type: 1,
+    discount_percent: 0,
+    vat: IS_VAT ? VAT_PERCENT : 0,
+    customer_id : null,
 }
 
 const transaction = ref(tempTransaction);
@@ -125,36 +143,63 @@ const searchTransactions = async ( reset ) => {
 }
 
 const showTransactionModal = async (transactionArgument) => {
-    if(typeof transactionArgument == 'object') {
+    if (typeof transactionArgument == 'object') {
         let transactionResult = await getTransaction (transactionArgument.id);
         transaction.value = transactionResult.data.res;
     } else {
         transaction.value = tempTransaction;
     }
+
+    if (
+        transactionArgument && 
+        transactionArgument.transaction_type != 'ITEM_TRANSACTION'
+    ) {
+        switch (transactionArgument.transaction_type) {
+            case TRANSACTION_MODAL_CONSTANTS.REFUND.value:
+                showRefundModal ();
+                break;
+            case TRANSACTION_MODAL_CONSTANTS.RETURN.value:
+                showReturnModal ();
+                break;
+            case TRANSACTION_MODAL_CONSTANTS.START_SHIFT.value:
+                showStartOfShiftModal ();
+                break;
+            case TRANSACTION_MODAL_CONSTANTS.END_SHIFT.value:
+                showEndOfShiftModal ();
+                break;
+            case TRANSACTION_MODAL_CONSTANTS.DEPOSIT.value:
+                showDepositCashModal ();
+                break;
+            case TRANSACTION_MODAL_CONSTANTS.WITHRAW.value:
+                showWithrawCashModal ();
+                break;
+        }
+        return;
+    }
     isShowTransactionModal.value = !isShowTransactionModal.value;
 }
 
-const showRefundModal = (transactionArgument) => {
+const showRefundModal = () => {
     isShowRefundModal.value = !isShowRefundModal.value;   
 }
 
-const showReturnModal = (transactionArgument) => {
+const showReturnModal = () => {
     isShowReturnModal.value = !isShowReturnModal.value;
 }
 
-const showStartOfShiftModal = (transactionArgument) => {
+const showStartOfShiftModal = () => {
     isShowStartOfShiftModal.value = !isShowStartOfShiftModal.value;
 }
 
-const showEndOfShiftModal = (transactionArgument) => {
+const showEndOfShiftModal = () => {
     isShowEndOfShiftModal.value = !isShowEndOfShiftModal.value;
 }
 
-const showDepositCashModal = (transactionArgument) => {
+const showDepositCashModal = () => {
     isShowDepositCashModal.value = !isShowDepositCashModal.value;
 }
 
-const showWithrawCashModal = (transactionArgument) => {
+const showWithrawCashModal = () => {
     isShowWithrawCashModal.value = !isShowWithrawCashModal.value;
 }
 
@@ -210,10 +255,10 @@ const tableHeaders = ref([
         name : 'TRANSACTION TYPE',
         field : 'transaction_type',
     },
-    {
+    /* {
         name : 'STOCK',
         field : 'stock',
-    },
+    }, */
     /*{
         name : 'UNIT',
         style: 'width:169px'
@@ -229,7 +274,7 @@ const tableHeaders = ref([
             view : {
                 color : 'blue',
                 label : 'View',
-                func : showTransactionModal
+                func : showTransactionModal,
             },
             /* delete : {
                 color : 'red',
@@ -253,64 +298,94 @@ const tableHeaders = ref([
         >
             <TransactionModal 
                 :transaction="transaction" 
-                :branchObject="branchObject" 
+                :branchObject="branchObject"
                 @closeTransactionModal="showTransactionModal"
                 @onAddTransaction=onAddTransaction 
             />
         </Modal>
-
         <Modal 
             :show=isShowRefundModal 
             @close="showRefundModal" 
             @onDialogDisplay="null" 
             extraWidth="max-width:90rem"
         >
-           
+            <RefundTransactionModal 
+                :transaction="transaction" 
+                :branchObject="branchObject"
+                :type=TRANSACTION_MODAL_CONSTANTS.REFUND
+                @closeTransactionModal=showRefundModal
+                @onAddTransaction=onAddTransaction 
+            />
         </Modal>
-
         <Modal 
             :show=isShowReturnModal 
             @close="showReturnModal" 
             @onDialogDisplay="null" 
             extraWidth="max-width:90rem"
         >
-            
+            <ReturnItemsModal 
+                :transaction="transaction" 
+                :branchObject="branchObject"
+                :type=TRANSACTION_MODAL_CONSTANTS.RETURN
+                @closeTransactionModal=showReturnModal
+                @onAddTransaction=onAddTransaction 
+            />
         </Modal>
-
         <Modal 
             :show=isShowStartOfShiftModal
             @close="showStartOfShiftModal" 
             @onDialogDisplay="null" 
             extraWidth="max-width:90rem"
         >
-           
+            <StartOfShiftModal 
+                :transaction="transaction" 
+                :branchObject="branchObject"
+                :type=TRANSACTION_MODAL_CONSTANTS.START_SHIFT
+                @closeTransactionModal=showStartOfShiftModal
+                @onAddTransaction=onAddTransaction 
+            />
         </Modal>
-
         <Modal 
             :show=isShowEndOfShiftModal
             @close="showEndOfShiftModal" 
             @onDialogDisplay="null" 
             extraWidth="max-width:90rem"
         >
-           
+            <EndOfShiftModal 
+                :transaction="transaction" 
+                :branchObject="branchObject"
+                :type=TRANSACTION_MODAL_CONSTANTS.END_SHIFT
+                @closeTransactionModal=showEndOfShiftModal
+                @onAddTransaction=onAddTransaction 
+            />
         </Modal>
-
         <Modal 
             :show=isShowDepositCashModal 
             @close="showDepositCashModal" 
             @onDialogDisplay="null" 
             extraWidth="max-width:90rem"
         >
-           
+            <DepositCashModal 
+                :transaction="transaction" 
+                :branchObject="branchObject"
+                :type=TRANSACTION_MODAL_CONSTANTS.DEPOSIT
+                @closeTransactionModal=showDepositCashModal
+                @onAddTransaction=onAddTransaction 
+            />
         </Modal>
-
         <Modal 
             :show=isShowWithrawCashModal 
             @close="showWithrawCashModal" 
             @onDialogDisplay="null" 
             extraWidth="max-width:90rem"
         >
-            
+            <WithrawCashModal 
+                :transaction="transaction" 
+                :branchObject="branchObject"
+                :type=TRANSACTION_MODAL_CONSTANTS.WITHRAW
+                @closeTransactionModal=showWithrawCashModal
+                @onAddTransaction=onAddTransaction 
+            />
         </Modal>
 
         <div style="background: #F05340;padding:1%; color:#fff;">

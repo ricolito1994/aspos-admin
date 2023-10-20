@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         //
-        Schema::table('transactions', function(Blueprint $table) {
-            $table->unsignedBigInteger('customer_id')->nullable();
+        Schema::table('customers', function(Blueprint $table) {
+            $table->unsignedBigInteger('company_id')->nullable();
         });
     }
 
@@ -23,8 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         //
-        Schema::table('transactions', function (Blueprint $table) {
-            $table->dropColumn('customer_id');
+        Schema::table('customers', function (Blueprint $table) {
+            $table->dropColumn('company_id');
         });
     }
 };

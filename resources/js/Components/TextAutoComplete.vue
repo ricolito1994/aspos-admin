@@ -1,5 +1,11 @@
 <script setup>
-import { onMounted, onUnmounted, ref, reactive, watch } from 'vue';
+import { 
+    onMounted, 
+    onUnmounted, 
+    ref,
+} from 'vue';
+
+import {event} from '@/Services/EventBus';
 
 const props = defineProps({
     getData : {
@@ -15,6 +21,9 @@ const props = defineProps({
         default: 0,
     },
     itmName : {
+        type: String,
+    },
+    style : {
         type: String,
     }
 })
@@ -96,6 +105,9 @@ const navigateItems = (scroll) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
+    event.on('clear-search-text', () => {
+        searchString.value = "";
+    });
 })
 
 onUnmounted(() => {
@@ -107,10 +119,16 @@ onUnmounted(() => {
 
 <template>
     <div @keydown="navResultList" tabindex="0" style="width:100%;">
-        <input type="text" v-model="searchString" @keyup="searchItems" style="width:100%;"/>
+        <input type="text" v-model="searchString" @keyup="searchItems" :style="style ? style : 'width:100%;'"/>
         <div id="result-pane" class="scrollbar" v-if="showResults" ref="dropdownResultsRef">
             <div v-if="results.length > 0 && searchString !== ''">
-                <div :class='currentIndex==index ? "results active" : "results"' v-for="(result, index) in results" :key="index" :id="`res-${index}`" @click="selectItem(index)">
+                <div 
+                    :class='currentIndex==index ? "results active" : "results"' 
+                    v-for="(result, index) in results" 
+                    :key="index" 
+                    :id="`res-${index}`" 
+                    @click="selectItem(index)"
+                >
                     {{ result[itemName] }}
                 </div>
             </div>

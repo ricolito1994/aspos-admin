@@ -42,7 +42,6 @@ axiosLoading.interceptors.response.use(
 );
 
 export function getBranches ( ) {
-    console.log('${host}',host)
     let branches = axiosLoading.get(`${host}/branches`);
     return new Promise ((resolve, reject) => {
         branches.then(res => {
@@ -94,7 +93,7 @@ export function getProducts ( company_id , searchString ) {
 
 export function getProducts1 ( company_id , searchString ) {
     searchString = searchString ? searchString : false;
-    let productsRequest = axios.get(`${host}/products/get/${company_id}/${searchString}`);
+    let productsRequest = axios.get(`${host}/products/get/${company_id}/${searchString}/${searchString}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -147,6 +146,20 @@ export function getTransactions (company_id, branch_id, searchString, transFrom,
 
 export function saveTransaction (transaction) {
     let productsRequest = axiosLoading.post(`${host}/transaction/save`, transaction);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+
+export function getCustomers ( company_id , searchString , customerType ) {
+    searchString = searchString ? searchString : false;
+    let productsRequest = axios.get(`${host}/customers/get/${company_id}/${customerType}/${searchString}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)

@@ -14,8 +14,9 @@ return new class extends Migration
         Schema::create('transactions', function (Blueprint $table) {
             $table->id();
             $table->string('transaction_code')->unique();
-            $table->string('transaction_type');
-            $table->boolean('stock');
+            $table->string('transaction_type')->nullable();
+            $table->boolean('stock')->nullable();
+            $table->string('item_transaction_type')->nullable();
             $table->date('transaction_date')->nullable();
             $table->longText('transaction_desc')->nullable();
             $table->float('total_price', 8, 2)->nullable();

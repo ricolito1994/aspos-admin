@@ -13,9 +13,13 @@ use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
 use App\Models\Company;
 use App\Models\Branch;
 
-class User extends Authenticatable implements CanResetPasswordContract
+class User extends Authenticatable 
+    implements CanResetPasswordContract
 {
-    use HasApiTokens, HasFactory, Notifiable, CanResetPassword;
+    use HasApiTokens, 
+        HasFactory, 
+        Notifiable, 
+        CanResetPassword;
     /**
      * The attributes that are mass assignable.
      *

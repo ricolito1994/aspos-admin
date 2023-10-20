@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TransactionsController;
@@ -27,29 +28,35 @@ Route::middleware('auth')->group(function () {
     
     Route::get('/dashboard', [DashboardController::class, 'index'])->name("dashboard"); 
 
-    Route::get('/products', [ProductController::class, 'index'])->name('products');
-
-    Route::get('/products/get/{companyId}/{searchString?}', [ProductController::class, 'getProducts'])->name('products.get');
-
-    Route::get('/product/get/{productId}', [ProductController::class, 'getProduct'])->name('product.get');
-
-    Route::post('/product/create', [ProductController::class, 'create'])->name('product.create');
+    Route::get('/products', [ProductController::class, 'index'])
+        ->name('products');
+    Route::get('/products/get/{companyId}/{searchString?}', [ProductController::class, 'getProducts'])
+        ->name('products.get');
+    Route::get('/product/get/{productId}', [ProductController::class, 'getProduct'])
+        ->name('product.get');
+    Route::post('/product/create', [ProductController::class, 'create'])
+        ->name('product.create');
 
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings');
-
     
-    Route::get('/transactions', [TransactionsController::class, 'index'])->name('transactions');
+    Route::get('/transactions', [TransactionsController::class, 'index'])
+        ->name('transactions');
+    Route::get('/transaction/get/{transactionId}', [TransactionsController::class, 'getTransaction'])
+        ->name('transaction.get');
+    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom}/{transTo}', 
+        [TransactionsController::class, 'getTransactions'])->name('transactions.get');
+    Route::post('/transaction/save', [TransactionsController::class, 'createTransaction'])
+        ->name('transaction.save');
 
-    Route::get('/transaction/get/{transactionId}', [TransactionsController::class, 'getTransaction'])->name('transaction.get');
+    Route::get('/branches', [TopnavController::class, 'getBranches'])
+        ->name('branch.get');
+    Route::post('/branch/change/{branchId}', [TopnavController::class, 'changeBranch'])
+        ->name('branch.change');
 
-    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom}/{transTo}', [TransactionsController::class, 'getTransactions'])->name('transactions.get');
-
-    Route::post('/transaction/save', [TransactionsController::class, 'createTransaction'])->name('transaction.save');
-
-
-    Route::get('/branches', [TopnavController::class, 'getBranches']);
-
-    Route::post('/branch/change/{branchId}', [TopnavController::class, 'changeBranch'])->name('branch.change');
+    Route::get('/customers/get/{companyId?}/{customerType?}/{searchString?}', [CustomerController::class, 'get'])
+        ->name('customers.get');
+    Route::post('/customers/create', [CustomerController::class, 'create'])
+        ->name('customers.create');
 });
 
 

@@ -1,8 +1,25 @@
 <script setup>
-import { onMounted, onUnmounted, ref, reactive, watch, computed } from 'vue';
-import { getProducts1, getProduct, saveTransaction, getTransactions, getTransaction } from '@/Services/ServerRequests';
+import { 
+    onMounted, 
+    onUnmounted, 
+    ref, 
+    reactive, 
+    watch, 
+    computed 
+} from 'vue';
+import { 
+    getProducts1, 
+    getProduct, 
+    saveTransaction, 
+    getCustomers 
+} from '@/Services/ServerRequests';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextAutoComplete from './TextAutoComplete.vue';
+import {
+    TRANSACTION_MODAL_CONSTANTS,
+    DISCOUNT_LIST,
+} from '@/Constants'
+import {event} from '@/Services/EventBus';
 
 const props = defineProps({
     transaction : {
@@ -29,24 +46,22 @@ const transactionObject = reactive(props.transaction);
 
 const alphaNumeric = ref('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 
-const amount = ref('0.00');
+const change = computed(() => transactionObject.amt_received - transactionObject.total_price);
 
-const change = ref('0.00');
+const customerType = ref(2);
 
-const transactionTypes = reactive ({
-    'SALE' : {
-        stock : false,
-    },
-    'DELIVERY' : {
-        stock : true,
-    },
-    'RETURN' : {
-        stock : true,
-    },
-    'DISPOSE' : {
-        stock : false,
-    },
+const customerNamePlacer = ref ("");
+
+const amount_payable = computed(()=>{
+    let discount = DISCOUNT_LIST.find(x => x.id === transactionObject.discount_type).value;
+    let vat = transactionObject.vat;
+    let discounted = transactionObject.total_price * discount;
+    let vattable = transactionObject.total_price * vat;
+
+    return ((transactionObject.total_price - discounted) + vattable);
 })
+
+const itemTransactionTypes = reactive (TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.types)
 
 const closeModal = () => {
     emit('closeTransactionModal')
@@ -147,7 +162,8 @@ const convertQuantities = (i) => {
         }
     }
 
-    transactionDetails[i].quantity = isNaN(parseFloat(transactionDetails[i].quantity)) ? 0 : parseFloat(transactionDetails[i].quantity);
+    transactionDetails[i].quantity = 
+        isNaN(parseFloat(transactionDetails[i].quantity)) ? 0 : parseFloat(transactionDetails[i].quantity);
     
     let remainingBalance = 
         !transactionObject.stock ? 
@@ -177,6 +193,7 @@ const computeTotals = (watchChangeVal) => {
 const addItem = () => {
     transactionDetails.push ({
         'transaction_type' : transactionObject.transaction_type,
+        'item_transaction_type' : transactionObject.item_transaction_type,
         'unit': '',
         'units' : [],
         'quantity' : 1,
@@ -206,20 +223,48 @@ const save = async ( ) => {
         return;
     }
 
-    let transaction = await saveTransaction({
+    if (change.value < 0) {
+        alert("Insufficient amount.")
+        return;
+    }
+
+    if (transactionDetails.length == 0) {
+        alert("Please chose product.");
+        return;
+    }
+    console.log(transactionObject,transactionDetails)
+
+   /*  let transaction = await saveTransaction({
         transaction: transactionObject,
         transactionDetails: transactionDetails,
         isCreate : !isUpdate.value,
     });
     transaction.data.res['isUpdate'] = !isUpdate.value;
-    emit('onAddTransaction', transaction.data.res)
+    emit('onAddTransaction', transaction.data.res) */
+}
+
+const onSelectCustomer = (data) => {
+    transactionObject.customer_id = data.id;
 }
 
 
+const getCustomers1 = async (company_id, searchString) => {
+    let data = await getCustomers(company_id, searchString, customerType.value);
+    return data;
+}
+
 watch(
-    () => transactionObject.transaction_type , 
+    () => transactionObject.item_transaction_type, 
     (newVal) => {   
-        transactionObject.stock = transactionTypes[newVal].stock;
+        transactionObject.stock = itemTransactionTypes[newVal].stock;
+        customerType.value = ((newVal == 'DELIVERY') ? 2 : 1);
+        transactionObject.customer_id = '';
+        event.emit('clear-search-text', "");
+        /* if(transactionObject.customer) {
+             transactionObject.customer.customer_name = ""; 
+        } else {
+            customerNamePlacer.value = "";
+        } */
         for (let i in transactionDetails) convertQuantities(i)
         computeTotals();
     }
@@ -232,6 +277,7 @@ onMounted(()=>{
     title.value = props.transaction.id ? props.transaction.transaction_code : 'NEW TRANSACTION';
     props.transaction.stock = props.transaction.stock == 1;
     isUpdate.value = !props.transaction.id ? false : true;
+    transactionObject.final_amt_received = amount_payable;
 })
 
 onUnmounted(()=>{
@@ -251,28 +297,29 @@ onUnmounted(()=>{
     </div>
     <div id="modal-content">
         <div style="width:100%; height:10%;" >
-            <div style="width:33.33%;float:left;">
+            <div style="width:33.33%; float:left; ">
+                <B>{{ transactionObject.item_transaction_type == 'SALE' ? 'CUSTOMER NAME' : 'SUPPLIER' }}</B>
+                <TextAutoComplete 
+                    :getData="getCustomers1" 
+                    itemName="customer_name" 
+                    :itmName="transactionObject.customer ? transactionObject.customer.customer_name : customerNamePlacer" 
+                    :itemIndex="0"
+                    :style="'width:90%'"
+                    @onSelectItem="onSelectCustomer"
+                />
+            </div>
+            <div style="width:33.33%;float:left; ">
                 <B>TRANSACTION CODE</B>
                 <input  type="text" v-model="transactionObject.transaction_code" style="width:90%;"/>
             </div>
-
-            <div style="width:33.33%;float:left;margin-left:-1.5%;">
+            <div style="width:33.33%;float:left;;">
                 <B>TRANSACTION TYPE</B>
-                <select v-model="transactionObject.transaction_type" style="width:100%;">
-                    <option v-for="(t, index) in transactionTypes" :key="index" :value="index">
+                <select v-model="transactionObject.item_transaction_type" style="width:100%;">
+                    <option v-for="(t, index) in itemTransactionTypes" :key="index" :value="index">
                         {{ index }}
                     </option>
                 </select>
             </div>
-
-            <div style="width:33.33%; float:right;">
-                <B>STOCK TYPE</B>
-                <select v-model="transactionObject.stock" disabled style="width:100%;">
-                    <option value="true">IN</option>
-                    <option value="false">OUT</option>
-                </select>
-            </div>
-                
             <div style="clear:both"></div>
         </div>
 
@@ -282,7 +329,7 @@ onUnmounted(()=>{
                     <PrimaryButton :additionalStyles="'background: green;'" @click=addItem>+ ADD ITEM</PrimaryButton>
                 </div>
             </div>
-            <div class="scrollbar" style="width:100%;max-width:150%;height:80%;max-height:80%; overflow:auto;">
+            <div class="scrollbar" style="width:100%;max-width:150%;height:75%;max-height:75%; overflow:auto;">
                 <div style="width:100%;">
                     <div style="float:left; width:20%; padding:1%;">
                         Product Name
@@ -296,7 +343,6 @@ onUnmounted(()=>{
                     <div style="float:left; width:10%; padding:1%;">
                         Cost
                     </div>
-                   
                     <div style="float:left; width:10%; padding:1%;">
                         Price
                     </div>
@@ -314,9 +360,19 @@ onUnmounted(()=>{
                     </div>
                     <div style="clear:both"></div>
                 </div>
-                <div v-for="(transactionDetail, transactionDetailIndex) in transactionDetails" v-bind:key="transactionDetail.indx" style="width:100%;">
+                <div 
+                    v-for="(transactionDetail, transactionDetailIndex) in transactionDetails" 
+                    v-bind:key="transactionDetail.indx" 
+                    style="width:100%;"
+                >
                     <div style="float:left; width:20%; padding:1%;">
-                        <TextAutoComplete :getData="getProducts1" itemName="product_name" :itmName="transactionDetail.pp ? transactionDetail.pp.product_name : ''" :itemIndex="transactionDetailIndex" @onSelectItem="onSelectProduct"/>
+                        <TextAutoComplete 
+                            :getData="getProducts1" 
+                            itemName="product_name" 
+                            :itmName="transactionDetail.pp ? transactionDetail.pp.product_name : ''" 
+                            :itemIndex="transactionDetailIndex"
+                            @onSelectItem="onSelectProduct"
+                        />
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
                         <input v-model="transactionDetail.quantity" @keyup="changeQuantity(transactionDetailIndex)" type="text" style="width:99%;"/>
@@ -353,24 +409,36 @@ onUnmounted(()=>{
                     <div style="clear:both"></div>
                 </div>
             </div>
-            <div style="width:100%;height:10%;">
-                <div style='float:left; width:25%;'>
-                    total price: <input type="text" v-model="transactionObject.total_price" />
+            <div style="width:100%;height:10%;;">
+                <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
+                    Total Price <input type="text" v-model="transactionObject.total_price" />
                 </div>
-                
-                <div style='float:left; width:25%;'>
-                    total cost: <input type="text" v-model="transactionObject.total_price" />
+                <div v-if="transactionObject.item_transaction_type == 'DELIVERY'" style='float:left; width:15%;'>
+                    Total Cost <input type="text" v-model="transactionObject.total_cost" />
                 </div>
-                <div style='float:left; width:25%;'>
-                    amount: <input type="text" v-model="transactionObject.amount_paid" />
+                <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
+                    Amount Payable <input type="text" v-model="transactionObject.final_amt_received" />
                 </div>
-                
-                <div style='float:left; width:25%;'>
-                    change: <input type="text" v-model="transactionObject.change" />
+                <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
+                    Amount <input type="text" v-model="transactionObject.amt_received" />
+                </div>
+                <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
+                    Change <input type="text" v-model="change" />
+                </div>
+                <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
+                    Discount
+                    <select v-model="transactionObject.discount_type">
+                        <option 
+                            v-for="(discount, index) in DISCOUNT_LIST" 
+                            :key="index" 
+                            :value="discount.id"
+                        >
+                            {{ discount.text }}
+                        </option>
+                    </select>
                 </div>
             </div>
         </div>
-
         <div style=" width:100%; height:23%; margin-top:1%;" >
             <div style="width:33.33%;float:left;">
                 <B>DESCRIPTION</B>

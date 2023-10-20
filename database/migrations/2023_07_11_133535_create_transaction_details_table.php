@@ -14,16 +14,17 @@ return new class extends Migration
         Schema::create('transaction_details', function (Blueprint $table) {
             $table->id();
             $table->string('transaction_id')->references('id')->on('transactions')->onDelete('cascade');
+            $table->string('item_transaction_type');
             $table->string('transaction_type');
-            $table->string('unit');
+            $table->string('unit')->nullable();
             $table->unsignedBigInteger('quantity');
             $table->float('price_per_unit', 8, 2)->nullable();
             $table->float('cost_per_unit', 8, 2)->nullable();
             $table->float('total_cost', 8, 2)->nullable();
             $table->float('total_price', 8, 2)->nullable();
             $table->float('remaining_balance', 8, 2);
-            $table->string('product_id')->references('id')->on('products');
-            $table->string('unit_id')->references('id')->on('unit');
+            $table->string('product_id')->references('id')->on('products')->nullable();
+            $table->string('unit_id')->references('id')->on('unit')->nullable();
             $table->string('branch_id')->references('id')->on('branch');
             $table->string('company_id')->references('id')->on('company');
             $table->string('supplier')->references('id')->on('suppliers');

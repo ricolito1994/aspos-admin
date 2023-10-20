@@ -84,7 +84,13 @@ class TransactionsController extends Controller
         
     }
 
-    public function getTransactions ($companyId, $branchId, $searchString, $transDateFrom, $transDateTo) 
+    public function getTransactions (
+        $companyId, 
+        $branchId, 
+        $searchString, 
+        $transDateFrom, 
+        $transDateTo
+        ) 
     {
         // get many transactions
         try {
@@ -98,6 +104,7 @@ class TransactionsController extends Controller
                
             $transactions = Transaction::where ($conds)
                     ->whereBetween('transaction_date', [$transDateFrom, $transDateTo])
+                    ->with('customer')
                     ->orderBy('id', 'ASC')
                     ->get();
             
@@ -112,11 +119,18 @@ class TransactionsController extends Controller
     {
         // get single transaction
         try {
-            $transaction = Transaction::where('id', $transactionId)->with('itemDetails')->first();
+            $transaction = Transaction::where('id', $transactionId)
+                ->with('itemDetails')
+                ->with('customer')
+                ->first();
             $ctr = 0;
             foreach ($transaction->itemDetails as $transactionDetail) {
                 // get product, price/cost of each transaction detail
-                $transaction->itemDetails[$ctr]['pp'] = ($transactionDetail->product()->with('unit')->first());
+                $transaction->itemDetails[$ctr]['pp'] = 
+                    $transactionDetail
+                        ->product()
+                        ->with('unit')
+                        ->first();
                 $ctr ++;
             }
 

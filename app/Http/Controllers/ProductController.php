@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use DB;
 use App\Models\Product;
 use App\Models\Pricelist;
 use App\Models\Transaction;
@@ -36,6 +36,7 @@ class ProductController extends Controller
         $prod = $data['product'];
         #dd($data,$prod);
         try {
+            DB::beginTransaction();
             $arrPrices = [];
 
             $validate = Validator::make($prod,
@@ -90,10 +91,11 @@ class ProductController extends Controller
 
             $product['remaining_balance'] = 0;
             $product['unit'] = '-';
-
+            DB::commit();
             return response()->json($product, 200);
             
         } catch (Exception $e) {
+            DB::rollback();
             return response()->json(['err' => $e], 500);
         }
     }

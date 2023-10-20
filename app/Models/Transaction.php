@@ -26,6 +26,13 @@ class Transaction extends Model
         'company_id',
         'total_cost',
         'total_price',
+        'customer_id',
+        'change',
+        'amt_released',
+        'amt_received',
+        'final_amt_received',
+        'discount_percent',
+        'discount_type',
     ];
 
     protected $dates = ['deleted_at'];
@@ -43,5 +50,10 @@ class Transaction extends Model
     public function itemDetails () 
     {
         return $this->hasMany('App\Models\TransactionDetail', 'transaction_id', 'id');
+    }
+
+    public function customer () 
+    {
+        return $this->belongsTo('App\Models\Customer', 'customer_id', 'id');
     }
 }
