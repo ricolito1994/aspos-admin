@@ -42,21 +42,21 @@ class Transaction extends Model
 
     public function branch () 
     {
-        return $this->belongsTo(Branch::class, 'id', 'branch_id');
+        return $this->belongsTo('App\Models\Branch', 'id', 'branch_id');
     }
 
     public function company () 
     {
-        return $this->belongsTo(Company::class, 'id', 'company_id');
+        return $this->belongsTo('App\Models\Company', 'id', 'company_id');
     }
 
     public function itemDetails () 
     {
-        return $this->hasMany(TransactionDetail::class, 'transaction_id', 'id');
+        return $this->hasMany('App\Models\TransactionDetail', 'transaction_id', 'id');
     }
 
     public function customer () 
     {
-        return $this->belongsTo(Customer::class, 'customer_id', 'id');
+        return $this->belongsTo('App\Models\Customer', 'customer_id', 'id');
     }
 }
