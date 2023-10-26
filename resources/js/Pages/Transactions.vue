@@ -1,8 +1,17 @@
 <script setup>
 import { getTransaction, getTransactions } from '@/Services/ServerRequests';
-import { usePage, Head, Link } from '@inertiajs/vue3';
+import { 
+    usePage, 
+    Head, 
+    Link 
+} from '@inertiajs/vue3';
 import Dropdown from '@/Components/Dropdown.vue'
-import { onMounted, onUnmounted, ref, reactive } from 'vue';
+import { 
+    onMounted, 
+    onUnmounted, 
+    ref, 
+    reactive 
+} from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DataTable from '@/Components/DataTable.vue';
@@ -54,7 +63,7 @@ const tempTransaction = {
     transaction_code : '',
     item_transaction_type : 'DELIVERY',
     transaction_type: TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.value,
-    stock : false,
+    stock : true,
     transaction_desc: 'a transaction',
     transaction_date : currentDate,
     total_price : parseFloat(0.0),
@@ -69,6 +78,8 @@ const tempTransaction = {
     discount_percent: 0,
     vat: IS_VAT ? VAT_PERCENT : 0,
     customer_id : null,
+    amt_released : null,
+    change : 0.00,
 }
 
 const transaction = ref(tempTransaction);
@@ -77,7 +88,17 @@ const dropDownMenuButton = ref(null);
 
 const displayDropdown = ref(false);
 
-onMounted ( async () => {
+onMounted ( () => {
+    loadTransactions();
+})
+
+onUnmounted(()=>{
+    // unmount webhook
+    // if element is destroyed
+})
+
+
+const loadTransactions = async () => {
     let transaction = await getTransactions(
         companyObject.value.id,
         branchObject.value.id,
@@ -86,32 +107,11 @@ onMounted ( async () => {
         transactionDateTo.value,
     );
     resultData.value = transaction.data.res;
-})
-
-onUnmounted(()=>{
-    // unmount webhook
-    // if element is destroyed
-})
-
-/* const showProductModal =  async ( product ) => {
-    if(typeof product == 'object') {
-        let productRes = await getProduct (product.id);
-        productObject.value = productRes.data;
-    } else {
-        productObject.value = {
-            product_name : '',
-            product_desc : '',
-            product_code : '-',
-            user_id : userObject.value.id,
-            company_id : companyObject.value.id,
-        };
-    }
-
-    isShowProductModal.value = !isShowProductModal.value;
-} */
+}
 
 const catchChangeBranch = (branch) => {
     branchObject.value = branch;
+    loadTransactions();
 }
 
 const onAddTransaction = (transaction) => {
@@ -203,9 +203,6 @@ const showWithrawCashModal = () => {
     isShowWithrawCashModal.value = !isShowWithrawCashModal.value;
 }
 
-
-
-
 const onCloseDropDown = ( ) => {
     displayDropdown.value = false;
 }
@@ -255,6 +252,10 @@ const tableHeaders = ref([
         name : 'TRANSACTION TYPE',
         field : 'transaction_type',
     },
+    {
+        name : 'CANCELLED',
+        field : 'is_cancelled',
+    },
     /* {
         name : 'STOCK',
         field : 'stock',
@@ -298,7 +299,8 @@ const tableHeaders = ref([
         >
             <TransactionModal 
                 :transaction="transaction" 
-                :branchObject="branchObject"
+                :branchObject="branchObject" 
+                :defaultValues=tempTransaction
                 @closeTransactionModal="showTransactionModal"
                 @onAddTransaction=onAddTransaction 
             />

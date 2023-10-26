@@ -88,7 +88,7 @@ class User extends Authenticatable
 
     public function supplierEntry () 
     {
-        return $this->hasMany('App\Models\Supploer', 'user_id', 'id');
+        return $this->hasMany('App\Models\SupplIer', 'user_id', 'id');
     }
 
 }

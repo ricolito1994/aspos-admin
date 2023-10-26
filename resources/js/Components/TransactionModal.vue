@@ -18,14 +18,22 @@ import TextAutoComplete from './TextAutoComplete.vue';
 import {
     TRANSACTION_MODAL_CONSTANTS,
     DISCOUNT_LIST,
+    VAT_PERCENT,
 } from '@/Constants'
 import {event} from '@/Services/EventBus';
+import {
+    alertBox,
+    ALERT_TYPE
+} from '@/Services/Alert'
 
 const props = defineProps({
     transaction : {
         type: Object,
     },
     branchObject : {
+        type: Object,
+    },
+    defaultValues : {
         type: Object,
     }
 });
@@ -46,17 +54,27 @@ const transactionObject = reactive(props.transaction);
 
 const alphaNumeric = ref('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 
-const change = computed(() => transactionObject.amt_received - transactionObject.total_price);
+const isCOD = ref(false);
+
+const isVAT = ref(false);
+
+const change = computed(() => transactionObject.amt_received - amount_payable.value);
 
 const customerType = ref(2);
 
 const customerNamePlacer = ref ("");
 
 const amount_payable = computed(()=>{
+    if (transactionObject.item_transaction_type == 'DELIVERY') {
+        return 0;
+    }
+
     let discount = DISCOUNT_LIST.find(x => x.id === transactionObject.discount_type).value;
-    let vat = transactionObject.vat;
+    let vat = transactionObject.vat == null ? 0 : transactionObject.vat;
     let discounted = transactionObject.total_price * discount;
     let vattable = transactionObject.total_price * vat;
+    
+    transactionObject.discount_percent = discount;
 
     return ((transactionObject.total_price - discounted) + vattable);
 })
@@ -93,6 +111,8 @@ const onSelectProduct = async (params) => {
     var prod = await getProduct(params.item.id)
         prod = prod.data;
 
+    console.log('params', params)
+
     if (transactionDetails.find(x=>x.product_code == params.item.product_code)) {
         alert (`${params.item.product_name} already exists.`);
         return;
@@ -102,6 +122,7 @@ const onSelectProduct = async (params) => {
         p: params.item, // from /products/get remaining balance only
         q: prod, // from /products/get/{id} with pricelist and unit
     };
+
     transactionDetails[params.index]['product_code'] = prod.product_code
     transactionDetails[params.index].product_id = prod.id;
 
@@ -123,7 +144,6 @@ const convertQuantities = (i) => {
     let p = transactionDetails[i].product;
     if (!p) return;
     let remBal = p.p.remaining_balance;
-
     if (p.p.remaining_balance == 0 && !transactionObject.stock) {
         alert("Remaining balance is negative!")
         transactionDetails[i].remaining_balance = transactionDetails[i].quantity;
@@ -191,6 +211,10 @@ const computeTotals = (watchChangeVal) => {
 }
 
 const addItem = () => {
+    if (isUpdate.value) {
+        alertBox("Cannot Edit Transaction", ALERT_TYPE.ERR);
+        return;
+    }
     transactionDetails.push ({
         'transaction_type' : transactionObject.transaction_type,
         'item_transaction_type' : transactionObject.item_transaction_type,
@@ -213,40 +237,46 @@ const addItem = () => {
 }
 
 const removeItem = (transactionDetailIndex) => {
+    if (isUpdate.value) {
+        alertBox("Cannot Edit Transaction", ALERT_TYPE.ERR);
+        return;
+    }
     transactionDetails.splice (transactionDetailIndex, 1);
     computeTotals(true);
 }
 
 const save = async ( ) => {
-    if (isUpdate.value) {
-        alert("Cannot edit transaction.")
-        return;
-    }
-
-    if (change.value < 0) {
-        alert("Insufficient amount.")
+    if (transactionObject.item_transaction_type=='SALE' && change.value < 0) {
+        alertBox('Insufficient amount', ALERT_TYPE.ERR);
         return;
     }
 
     if (transactionDetails.length == 0) {
-        alert("Please chose product.");
+        alertBox('Please Choose a Product.', ALERT_TYPE.ERR);
         return;
     }
-    console.log(transactionObject,transactionDetails)
+    try {
+        let transaction = await saveTransaction({
+            transaction: transactionObject,
+            transactionDetails: transactionDetails,
+            isCreate : !isUpdate.value,
+        });
 
-   /*  let transaction = await saveTransaction({
-        transaction: transactionObject,
-        transactionDetails: transactionDetails,
-        isCreate : !isUpdate.value,
-    });
-    transaction.data.res['isUpdate'] = !isUpdate.value;
-    emit('onAddTransaction', transaction.data.res) */
+        transaction.data.res['isUpdate'] = !isUpdate.value;
+        transactionObject.value = transaction.data.res;
+        alertBox('Transaction success!', ALERT_TYPE.MSG);
+        emit('onAddTransaction', transaction.data.res); 
+        
+        if (!isUpdate.value) isUpdate.value = true;
+    } catch (e) {
+        alertBox(e.response.data.err ? e.response.data.err : e.response.data.message, 
+            ALERT_TYPE.ERR);
+    }
 }
 
 const onSelectCustomer = (data) => {
-    transactionObject.customer_id = data.id;
+    transactionObject.customer_id = data.item.id;
 }
-
 
 const getCustomers1 = async (company_id, searchString) => {
     let data = await getCustomers(company_id, searchString, customerType.value);
@@ -256,17 +286,40 @@ const getCustomers1 = async (company_id, searchString) => {
 watch(
     () => transactionObject.item_transaction_type, 
     (newVal) => {   
+        isVAT.value = false;
         transactionObject.stock = itemTransactionTypes[newVal].stock;
         customerType.value = ((newVal == 'DELIVERY') ? 2 : 1);
         transactionObject.customer_id = '';
-        event.emit('clear-search-text', "");
-        /* if(transactionObject.customer) {
-             transactionObject.customer.customer_name = ""; 
-        } else {
-            customerNamePlacer.value = "";
-        } */
-        for (let i in transactionDetails) convertQuantities(i)
+        event.emit('TextAutoCompleteComponent:clearSearchText', "");
+        for (let i in transactionDetails) {
+            transactionDetails[i].item_transaction_type = newVal;
+            transactionDetails[i].stock = transactionObject.stock;
+            convertQuantities(i);
+        }
         computeTotals();
+    }
+);
+
+
+watch(
+    () => isCOD.value, 
+    (newVal) => {   
+        if (newVal) {
+            transactionObject.amt_released = transactionObject.total_cost;
+        } else {
+            transactionObject.amt_released = null;
+        }
+    }
+);
+
+watch(
+    () => isVAT.value, 
+    (newVal) => {   
+        if (!newVal) {
+            transactionObject.vat = null;
+        } else {
+            transactionObject.vat = VAT_PERCENT;
+        }
     }
 );
 
@@ -274,14 +327,24 @@ onMounted(()=>{
     // onmounted hook
     // console.log('transactionObject', props.transaction)
     // transactionDetails = props.transaction.item_details;
+    isVAT.value = transactionObject.vat !== null;
+    isCOD.value = transactionObject.amt_released !== null && transactionObject.item_transaction_type == 'DELIVERY';
     title.value = props.transaction.id ? props.transaction.transaction_code : 'NEW TRANSACTION';
     props.transaction.stock = props.transaction.stock == 1;
     isUpdate.value = !props.transaction.id ? false : true;
     transactionObject.final_amt_received = amount_payable;
+    transactionObject.change = change;
 })
 
 onUnmounted(()=>{
     // onUnmounted hook
+    // when component is destroyed/closed
+    delete transactionObject.transactionDetails;
+    transactionObject.vat = null;
+    transactionObject.total_price = 0.0;
+    transactionObject.total_cost = 0.0;
+    amount_payable.value = 0.0;
+    change.value = 0.0;
 })
 
 </script>
@@ -310,11 +373,11 @@ onUnmounted(()=>{
             </div>
             <div style="width:33.33%;float:left; ">
                 <B>TRANSACTION CODE</B>
-                <input  type="text" v-model="transactionObject.transaction_code" style="width:90%;"/>
+                <input :disabled="isUpdate" type="text" v-model="transactionObject.transaction_code" style="width:90%;"/>
             </div>
             <div style="width:33.33%;float:left;;">
                 <B>TRANSACTION TYPE</B>
-                <select v-model="transactionObject.item_transaction_type" style="width:100%;">
+                <select :disabled="isUpdate" v-model="transactionObject.item_transaction_type" style="width:100%;">
                     <option v-for="(t, index) in itemTransactionTypes" :key="index" :value="index">
                         {{ index }}
                     </option>
@@ -341,16 +404,16 @@ onUnmounted(()=>{
                         Unit
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        Cost
-                    </div>
-                    <div style="float:left; width:10%; padding:1%;">
                         Price
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        Total Cost
+                        Cost
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
                         Total Price
+                    </div>
+                    <div style="float:left; width:10%; padding:1%;">
+                        Total Cost
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
                         Balance
@@ -375,7 +438,11 @@ onUnmounted(()=>{
                         />
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input v-model="transactionDetail.quantity" @keyup="changeQuantity(transactionDetailIndex)" type="text" style="width:99%;"/>
+                        <input v-model="transactionDetail.quantity"
+                            @keyup="changeQuantity(transactionDetailIndex)" 
+                            type="text" 
+                            style="width:99%;"
+                        />
                     </div>
                     <div style="float:left; width:13%; padding:1%;"> 
                         <select @change="changeUnit(transactionDetailIndex)" v-model="transactionDetail.unit_id" type="text" style="width:99%;">
@@ -416,6 +483,16 @@ onUnmounted(()=>{
                 <div v-if="transactionObject.item_transaction_type == 'DELIVERY'" style='float:left; width:15%;'>
                     Total Cost <input type="text" v-model="transactionObject.total_cost" />
                 </div>
+                <div 
+                    v-if="transactionObject.item_transaction_type == 'DELIVERY'" 
+                    style='float:left; padding-top: 0.5%; width:25%; padding-left: 25px; cursor: pointer;'
+                >
+                   <br> 
+                   <input type="checkbox" v-model="isCOD"  id="is_cod" /> &nbsp;
+                   <label style="cursor: pointer;" :for="`is_cod`" >
+                        <b>Cash on Delivery</b>
+                    </label>&nbsp;
+                </div>
                 <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
                     Amount Payable <input type="text" v-model="transactionObject.final_amt_received" />
                 </div>
@@ -436,6 +513,16 @@ onUnmounted(()=>{
                             {{ discount.text }}
                         </option>
                     </select>
+                </div>
+                <div 
+                    v-if="transactionObject.item_transaction_type == 'SALE'" 
+                    style='float:left; padding-top: 0.5%; width:25%; padding-left: 25px; cursor: pointer;'
+                >
+                   <br> 
+                   <input type="checkbox" v-model="isVAT"  id="is_vat" /> &nbsp;
+                   <label style="cursor: pointer;" :for="`is_vat`" >
+                        <b>IS Vattable {{ VAT_PERCENT * 100 }}%</b>
+                    </label>&nbsp;
                 </div>
             </div>
         </div>

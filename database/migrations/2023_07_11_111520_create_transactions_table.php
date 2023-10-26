@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('item_transaction_type')->nullable();
             $table->date('transaction_date')->nullable();
             $table->longText('transaction_desc')->nullable();
-            $table->float('total_price', 8, 2)->nullable();
-            $table->float('total_cost', 8, 2)->nullable();
+            $table->float('total_price', 12, 2)->nullable();
+            $table->float('total_cost', 12, 2)->nullable();
             $table->unsignedBigInteger('supplier_id')->references('id')->on('suppliers')->nullable();
             $table->unsignedBigInteger('user_id')->references('id')->on('users');
             $table->unsignedBigInteger('branch_id')->references('id')->on('branch');

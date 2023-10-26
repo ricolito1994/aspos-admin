@@ -2,16 +2,16 @@
 import TopNav from "@/Components/TopNav.vue";
 import SideNav from "@/Components/SideNav.vue";
 import LoadingComponent from "@/Components/LoadingComponent.vue";
-
+import AlertBox from "@/Components/AlertBox.vue";
 defineProps({
     catchChangeBranch : {
         type: Function,
     }
 })
 
-
 </script>
 <template>
+    <AlertBox />
     <LoadingComponent></LoadingComponent>
     <div id="body-container">
         <TopNav @catchChangeBranch="catchChangeBranch"></TopNav>

@@ -18,11 +18,11 @@ return new class extends Migration
             $table->string('transaction_type');
             $table->string('unit')->nullable();
             $table->unsignedBigInteger('quantity');
-            $table->float('price_per_unit', 8, 2)->nullable();
-            $table->float('cost_per_unit', 8, 2)->nullable();
-            $table->float('total_cost', 8, 2)->nullable();
-            $table->float('total_price', 8, 2)->nullable();
-            $table->float('remaining_balance', 8, 2);
+            $table->float('price_per_unit', 12, 2)->nullable();
+            $table->float('cost_per_unit', 12, 2)->nullable();
+            $table->float('total_cost', 12, 2)->nullable();
+            $table->float('total_price', 12, 2)->nullable();
+            $table->float('remaining_balance', 12, 2);
             $table->string('product_id')->references('id')->on('products')->nullable();
             $table->string('unit_id')->references('id')->on('unit')->nullable();
             $table->string('branch_id')->references('id')->on('branch');

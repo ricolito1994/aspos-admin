@@ -33,27 +33,30 @@ class Transaction extends Model
         'final_amt_received',
         'discount_percent',
         'discount_type',
+        'item_transaction_type',
+        'vat',
+        'amt_released',
     ];
 
     protected $dates = ['deleted_at'];
 
     public function branch () 
     {
-        return $this->belongsTo('App\Models\Branch', 'id', 'branch_id');
+        return $this->belongsTo(Branch::class, 'id', 'branch_id');
     }
 
     public function company () 
     {
-        return $this->belongsTo('App\Models\Company', 'id', 'company_id');
+        return $this->belongsTo(Company::class, 'id', 'company_id');
     }
 
     public function itemDetails () 
     {
-        return $this->hasMany('App\Models\TransactionDetail', 'transaction_id', 'id');
+        return $this->hasMany(TransactionDetail::class, 'transaction_id', 'id');
     }
 
     public function customer () 
     {
-        return $this->belongsTo('App\Models\Customer', 'customer_id', 'id');
+        return $this->belongsTo(Customer::class, 'customer_id', 'id');
     }
 }

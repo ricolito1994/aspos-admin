@@ -19,8 +19,8 @@ class UserAdminSeeder extends Seeder
     {
         $data = array(
             array(
-                'name' => 'Niel Raymond Baylon',
-                'email' => 'niel.baylon@4bhardware.com',
+                'name' => 'Neil Raymond Baylon',
+                'email' => 'neil.baylon@4bhardware.com',
                 'phone' => '09507199111',
                 'username' => '4badminpos',
                 'password' => Hash::make('4bhardwareadmin'),

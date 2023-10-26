@@ -1,11 +1,10 @@
 <script setup>
+import {event} from '@/Services/EventBus';
 import { 
     onMounted, 
     onUnmounted, 
     ref,
 } from 'vue';
-
-import {event} from '@/Services/EventBus';
 
 const props = defineProps({
     getData : {
@@ -105,7 +104,7 @@ const navigateItems = (scroll) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
-    event.on('clear-search-text', () => {
+    event.on('TextAutoCompleteComponent:clearSearchText', () => {
         searchString.value = "";
     });
 })
@@ -113,7 +112,6 @@ onMounted(() => {
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
 });
-
 
 </script>
 

@@ -1,5 +1,10 @@
 <script setup>
-import { computed, onMounted, onUnmounted, watch } from 'vue';
+import { 
+    computed, 
+    onMounted, 
+    onUnmounted, 
+    watch 
+} from 'vue';
 
 const props = defineProps({
     show: {
@@ -18,6 +23,10 @@ const props = defineProps({
         type: String,
         default: 'max-width:70rem'
     },
+    customStyle : {
+        type: String,
+        default: '',
+    }
 });
 
 const emit = defineEmits(['close', 'onDialogDisplay']);
@@ -70,7 +79,12 @@ const maxWidthClass = computed(() => {
 <template>
     <teleport to="body">
         <transition leave-active-class="duration-200">
-            <div v-show="show" class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50" scroll-region>
+            <div 
+                v-show="show" 
+                class="fixed inset-0 overflow-y-auto px-4 py-6 sm:px-0 z-50" 
+                :style="customStyle" 
+                scroll-region
+            >
                 <transition
                     enter-active-class="ease-out duration-300"
                     enter-from-class="opacity-0"

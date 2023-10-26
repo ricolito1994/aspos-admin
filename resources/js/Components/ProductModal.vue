@@ -44,6 +44,10 @@ let priceList = reactive([
 
 const tableHeaders = ref([
     {
+        name : 'id',
+        field : 'id',
+    },
+    {
         name : 'DATE',
         field : 'created_at',
     },
@@ -258,12 +262,17 @@ watch (priceList, (oldval, newval) => {
                         <b>{{price.pricelist_name}}</b>
                     </div>
                     <div style="float:right;">
-                        <input @change="setToDefaultPrice(priceIndex)" style="cursor: pointer;" v-model="price.is_default" :id="`default-price-list-${priceIndex}`" type="checkbox" />&nbsp;
+                        <input 
+                            @change="setToDefaultPrice(priceIndex)" 
+                            style="cursor: pointer;" 
+                            v-model="price.is_default" 
+                            :id="`default-price-list-${priceIndex}`"
+                            type="checkbox" 
+                        />&nbsp;
                         <label style="cursor: pointer;" :for="`default-price-list-${priceIndex}`" @change="setToDefaultPrice(priceIndex)">
                             <b>DEFAULT PRICE</b>
                         </label>&nbsp;
                         <PrimaryButton :additionalStyles="'background: #e17b7b;'" @click=removePricelist(priceIndex)>X REMOVE</PrimaryButton>
-                                    
                     </div>
                     <div style="float:right;">
                         
@@ -338,7 +347,7 @@ watch (priceList, (oldval, newval) => {
                 Transactions at: <b>{{ branchObject.branch_name }}</b>
             </div>
             <div>
-                <!--<DataTable :tableHeaders="tableHeaders" :resultData="product.transactions" />-->
+                <DataTable :tableHeaders="tableHeaders" :resultData="product.transactions" />
             </div>
         </div>
     </div>

@@ -31,6 +31,9 @@ class CustomerController extends Controller
             ],
             [
                 'customer_code.unique' => 'Customer code already exists.',
+                'customer_name.unique' => 'Customer code already exists.',
+                'customer_code.required' => 'Customer code required.',
+                'customer_name.required' => 'Customer name required.',
             ]);
             
             $product = Product::updateOrCreate(

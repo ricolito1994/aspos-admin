@@ -48,6 +48,7 @@ class TransactionsController extends Controller
             ],
             [
                 'transaction_code.unique' => 'Transaction code already exists.',
+                'transaction_code.required' => 'Transaction code is required.',
             ]);
 
             if ($validate->fails()) {
@@ -64,16 +65,21 @@ class TransactionsController extends Controller
                         unset($transactionDetails[$j][$omitsToTransaction[$k]]);
                 }
             }
-
-            $transaction = Transaction::updateOrCreate([
-               'transaction_code' => $transactionData['transaction_code'],
-            ], $transactionData);
+            
 
             if ($req['isCreate']) {
+                $transaction = Transaction::create($transactionData);
+
                 foreach ($transactionDetails as $transactionDetail) {
                     // iterate through transaction details
-                    $transaction->itemDetails()->create($transactionDetail);
+                    $transaction
+                        ->itemDetails()
+                        ->create($transactionDetail);
                 }
+            } else {
+                $transaction = Transaction::updateOrCreate([
+                    'transaction_code' => $transactionData['transaction_code'],
+                ], $transactionData);
             }
             DB::commit();
             return response()->json(['res' => $transaction], 200);

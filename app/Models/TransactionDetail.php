@@ -17,6 +17,7 @@ class TransactionDetail extends Model
     protected $fillable = [
         'transaction_id',
         'transaction_type',
+        'item_transaction_type',
         'unit',
         'quantity',
         'price_per_unit',

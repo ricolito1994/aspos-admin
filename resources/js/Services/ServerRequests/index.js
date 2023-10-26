@@ -93,7 +93,7 @@ export function getProducts ( company_id , searchString ) {
 
 export function getProducts1 ( company_id , searchString ) {
     searchString = searchString ? searchString : false;
-    let productsRequest = axios.get(`${host}/products/get/${company_id}/${searchString}/${searchString}`);
+    let productsRequest = axios.get(`${host}/products/get/${company_id}/${searchString}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -168,4 +168,10 @@ export function getCustomers ( company_id , searchString , customerType ) {
             reject(err)
         })
     })
+}
+
+
+export function cancelTransaction (id) {
+    let productsRequest = axios.get(`${host}/transaction/post/cancel/${id}`);
+    
 }

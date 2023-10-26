@@ -118,6 +118,7 @@ class ProductController extends Controller
                     $query->with('transaction');
                     $query->where('branch_id', $user->selected_branch);
                     $query->orderBy('id', 'DESC');
+                    $query->is_null('is_cancelled');
                     //$query->max('id');
                 })
                 ->with('pricelist', function($query) use ($user) {
