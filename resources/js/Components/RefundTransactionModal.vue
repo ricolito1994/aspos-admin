@@ -55,6 +55,8 @@ const errors = ref([]);
 
 const transactionDetails = ref ([]);
 
+let tempTransactionDetails = reactive ([]);
+
 let transactionObject = reactive(props.transaction);
 
 const emit = defineEmits(['closeTransactionModal', 'onAddTransaction'])
@@ -103,9 +105,11 @@ const onSelectTransaction = (selectedTransaction) => {
     for (let i in selectedTransaction.item_details) {
         let sel = selectedTransaction.item_details[i];
         let latestUnitName = sel.product.unit[sel.product.unit.findIndex(x => x.id === parseInt(sel.latest_rem_bal_unit))].unit_name;
+        let latestRemainingBalance = selectedTransaction.item_details[i]['latest_rem_bal_qty'];
         selectedTransaction.item_details[i]['old_qty'] = parseFloat(sel.quantity);
         selectedTransaction.item_details[i]['quantity'] = 0;
         selectedTransaction.item_details[i]['latest_rem_bal_unit_name'] = latestUnitName;
+        selectedTransaction.item_details[i]['remaining_balance'] = latestRemainingBalance;
     }
     transactionDetails.value = selectedTransaction.item_details;
 }
@@ -118,18 +122,45 @@ const changeQuantity = (transactionIndex) => {
     let transCost = transactionObject.item_details[transactionIndex].old_qty * prodCost;
 
     let quantity = parseFloat(transactionDetails.value[transactionIndex].quantity); 
+    let latestRemainingBalance = transactionObject.item_details[transactionIndex].latest_rem_bal_qty;
+
+    
+    let productName = transactionObject.item_details[transactionIndex].product.product_name;
+    
+    let errMsg1 = `${productName} must be greater than 0`;
+    if (quantity < 0) {
+        if (!errors.value.find(x=>x === errMsg1)) errors.value.push(errMsg1);
+    } else {
+        let indxErr = errors.value.findIndex(x=>x === errMsg1);
+        if (indxErr > -1) errors.value.splice(indxErr, 1);
+    }
+
 
     let newPrice = Math.abs((quantity * prodPrice) - transPrice);
     let newCost = Math.abs((quantity * prodCost) - transCost);
-    let qty = quantity - parseFloat(transactionObject.item_details[transactionIndex].latest_rem_bal_qty)
+    let qty =  parseFloat(latestRemainingBalance) - quantity;
+    
     if (transactionObject.item_transaction_type == 'SALE') {
         newPrice = Math.abs(newPrice - transPrice);
         newCost = Math.abs(newCost - transCost);
-        qty = quantity + parseFloat(transactionObject.item_details[transactionIndex].latest_rem_bal_qty)
+        qty = quantity + parseFloat(latestRemainingBalance)
+    }
+
+    let errMsg2 = `${productName} quantity must not be greater than the ordered quantity.`;
+    if (quantity > transactionObject.item_details[transactionIndex].old_qty) {
+        if (!errors.value.find(x=>x === errMsg2)) errors.value.push(errMsg2);
+    } else {
+        let indxErr = errors.value.findIndex(x=>x === errMsg2);
+        if (indxErr > -1) errors.value.splice(indxErr, 1);
     }
     
     transactionDetails.value[transactionIndex].total_cost = newCost; 
     transactionDetails.value[transactionIndex].total_price = newPrice; 
+    transactionDetails.value[transactionIndex].remaining_balance = qty;
+
+    if (errors.value.length > 0) {
+        alertBox(errors.value, ALERT_TYPE.ERR)
+    }
 }
 onMounted (() => {
     transactionDetails.value = props.transaction.id ? 
@@ -231,8 +262,9 @@ onMounted (() => {
                                 type="text"
                             />
                         </div>
+
                         <div style="float:left; width:15%; padding:1%;"> 
-                            <select v-model="transactionDetail.unit_id" type="text" style="width:99%;">
+                            <select disabled v-model="transactionDetail.unit_id" type="text" style="width:99%;">
                                 <option v-for="(unit, uIndex) in transactionDetail.unit" :key="uIndex" :value="unit.id">
                                     {{ unit.unit_name }}
                                 </option>
@@ -246,7 +278,7 @@ onMounted (() => {
                             <input disabled v-model="transactionDetail.total_price" type="text" style="width:100%;"/>
                         </div>
                         <div style="float:left; width:15%; padding:1%;">
-                            <input disabled v-model="transactionDetail.latest_rem_bal_qty" type="text" style="width:50%;"/> 
+                            <input disabled v-model="transactionDetail.remaining_balance" type="text" style="width:50%;"/> 
                             &nbsp;<b>{{ transactionDetail.latest_rem_bal_unit_name }}</b>
                         </div>
                         
