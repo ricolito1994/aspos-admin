@@ -43,6 +43,8 @@ Route::middleware('auth')->group(function () {
         ->name('transactions');
     Route::get('/transaction/get/{transactionId}', [TransactionsController::class, 'getTransaction'])
         ->name('transaction.get');
+    Route::get('/transaction/search/{searchString}/{companyId}/{branchId}', [TransactionsController::class, 'searchTransaction'])
+        ->name('transaction.search');
     Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom}/{transTo}', 
         [TransactionsController::class, 'getTransactions'])->name('transactions.get');
     Route::post('/transaction/save', [TransactionsController::class, 'createTransaction'])
@@ -55,7 +57,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/customers/get/{companyId?}/{customerType?}/{searchString?}', [CustomerController::class, 'get'])
         ->name('customers.get');
-    Route::post('/customers/create', [CustomerController::class, 'create'])
+    Route::post('/customers/save', [CustomerController::class, 'save'])
         ->name('customers.create');
 });
 

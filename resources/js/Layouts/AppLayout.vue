@@ -3,6 +3,7 @@ import TopNav from "@/Components/TopNav.vue";
 import SideNav from "@/Components/SideNav.vue";
 import LoadingComponent from "@/Components/LoadingComponent.vue";
 import AlertBox from "@/Components/AlertBox.vue";
+import CustomerModal from "@/Components/CustomerModal.vue";
 defineProps({
     catchChangeBranch : {
         type: Function,
@@ -12,10 +13,11 @@ defineProps({
 </script>
 <template>
     <AlertBox />
-    <LoadingComponent></LoadingComponent>
+    <CustomerModal />
+    <LoadingComponent />
     <div id="body-container">
         <TopNav @catchChangeBranch="catchChangeBranch"></TopNav>
-        <SideNav></SideNav>
+        <SideNav />
         <div id="app-container">
             <slot />
         </div>

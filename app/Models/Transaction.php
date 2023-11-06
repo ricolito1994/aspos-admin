@@ -55,6 +55,11 @@ class Transaction extends Model
         return $this->hasMany('App\Models\TransactionDetail', 'transaction_id', 'id');
     }
 
+    public function refTransaction () 
+    {
+        return $this->belongsTo('App\Models\Transaction', 'ref_transaction_id', 'id');
+    }
+
     public function customer () 
     {
         return $this->belongsTo('App\Models\Customer', 'customer_id', 'id');

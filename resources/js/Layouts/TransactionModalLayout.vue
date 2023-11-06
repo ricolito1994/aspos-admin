@@ -34,6 +34,8 @@ const props = defineProps({
 let transactionDetails = 
     reactive (props.transaction.id ? props.transaction.item_details : []);
 
+const userObject = ref(JSON.parse(localStorage.getItem('user')));
+
 const emit = defineEmits([
     'closeTransactionModal', 
     'onAddTransaction', 
@@ -61,9 +63,7 @@ const save = () => {
         <div style="clear:both"></div>
     </div>
     <div id="modal-content">
-        <div style="width:100%; height:10%;" >
-            <slot/>
-        </div>
+        <slot name="transaction" :branch-object="branchObject" :user-object="userObject"/>
     </div>
     <div id="modal-footer">
         <div style="float:right">

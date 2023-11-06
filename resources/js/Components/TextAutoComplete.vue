@@ -24,6 +24,9 @@ const props = defineProps({
     },
     style : {
         type: String,
+    },
+    addNew : {
+        type: Function,
     }
 })
 
@@ -42,14 +45,22 @@ const searchString = ref(props.itmName);
 
 const emit = defineEmits(['onSelectItem']);
 
+const isLoading = ref (true);
+
 const searchItems = async (event) => {
+    isLoading.value = true;
+
     if(event.keyCode !== 13) 
         showResults.value = true;
     
     if(event.keyCode !== 38 &&  event.keyCode !== 40) {
         currentIndex.value = -1;
         let res = await props.getData(1, searchString.value)
-        results.value = res.data;
+        isLoading.value = false;
+        results.value = res.data.res ? res.data.res : res.data;
+        
+    } else {
+        isLoading.value = false;
     }
 }
 
@@ -73,6 +84,14 @@ const navResultList = (event) => {
 }
 
 const selectItem = (index) => {
+    if (
+        (index == 'addnew' && typeof props.addNew === 'function') || 
+        (currentIndex.value == results.value.length)
+    ) {
+        props.addNew()
+        return;
+    }
+
     if(typeof index !== 'undefined') currentIndex.value = index; 
     currentItem.value = results.value[currentIndex.value];
     searchString.value = currentItem.value[props.itemName];
@@ -88,13 +107,12 @@ const navigateItems = (scroll) => {
     if (scroll < 0 && currentIndex.value > -1) {
         currentIndex.value --;
     }
-    else {
-        if ( (currentIndex.value < results.value.length - 1) ) {
-            currentIndex.value ++;
-        }
-    } 
+    else if ( (currentIndex.value < results.value.length) ) {
+        currentIndex.value ++;
+    }
 
-    searchString.value = results.value[currentIndex.value][props.itemName];
+    searchString.value = 
+        results.value[currentIndex.value] ? results.value[currentIndex.value][props.itemName] : '';
     //var scrollAmount = dropdownResultsRef.value.clientHeight * scroll;
     const itemHeight = dropdownResultsRef.value.querySelector('.results').clientHeight;
     const scrollAmount = itemHeight * scroll;
@@ -104,8 +122,8 @@ const navigateItems = (scroll) => {
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
-    event.on('TextAutoCompleteComponent:clearSearchText', () => {
-        searchString.value = "";
+    event.on('TextAutoCompleteComponent:clearSearchText', (modelName) => {
+        if (props.itemName == modelName) searchString.value = "";
     });
 })
 
@@ -119,6 +137,9 @@ onUnmounted(() => {
     <div @keydown="navResultList" tabindex="0" style="width:100%;">
         <input type="text" v-model="searchString" @keyup="searchItems" :style="style ? style : 'width:100%;'"/>
         <div id="result-pane" class="scrollbar" v-if="showResults" ref="dropdownResultsRef">
+            <div v-if="isLoading">
+                <span>Loading ...</span>
+            </div>
             <div v-if="results.length > 0 && searchString !== ''">
                 <div 
                     :class='currentIndex==index ? "results active" : "results"' 
@@ -130,8 +151,15 @@ onUnmounted(() => {
                     {{ result[itemName] }}
                 </div>
             </div>
-            <div v-else>
-                <span>No result</span>
+            <div v-else-if="!isLoading">
+                <span>No Result</span>
+            </div>
+            <div 
+                v-if="typeof addNew === 'function' && !isLoading" 
+                :class='currentIndex==results.length ? "results active" : "results"'
+                @click="selectItem('addnew')" 
+            >
+                Add New
             </div>
         </div>
     </div>

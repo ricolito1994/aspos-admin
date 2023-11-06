@@ -121,6 +121,59 @@ class TransactionsController extends Controller
         }
     }
 
+
+    public function searchTransaction (
+        $searchString = false,
+        $companyId = 1, 
+        $branchId = 1, 
+    ) 
+    {
+        // get many transactions
+        try {
+            $conds =  [
+                ['company_id', $companyId],
+                ['branch_id', $branchId],
+                ['transaction_code', 'LIKE', "%$searchString%"]
+            ];
+                
+            if($searchString == "false") unset($conds[2]);
+               
+            $transactions = Transaction::where ($conds)
+                ->with('customer')
+                ->with('itemDetails', function ($q) {
+                    $q->with('unit');
+                    $q->with('product', function ($q) {
+                        $q->with('unit');
+                    });
+                })
+                ->with('refTransaction', function ($q) {
+                    $q->with('itemDetails', function ($q) {
+                        $q->with('unit');
+                    });
+                })
+                ->orderBy('id', 'ASC')
+                ->get();
+
+                for ($i = 0 ; $i < count($transactions[0]->itemDetails); $i++) {
+                    $transactionDetail = $transactions[0]->itemDetails[$i];
+
+                    $rembal = TransactionDetail::where(function($q) use ($transactionDetail){
+                        $product_id=$transactionDetail->product_id;
+                        $q->whereRaw("id = (SELECT max(id) from transaction_details where product_id=$product_id)");
+                        $q->where("product_id", $product_id);
+                    })
+                    ->first();
+                    $transactionDetail['latest_rem_bal_qty'] = $rembal->remaining_balance;
+                    $transactionDetail['latest_rem_bal_unit'] = $rembal->unit_id;
+                    $transactions[0]->itemDetails[$i] = $transactionDetail;
+                }
+            return response()->json(['res' => $transactions], 200);
+
+        } catch (Exception $e) {
+            return response()->json(['err'=>$e], 500);
+        }
+    }
+
     public function getTransaction ($transactionId) 
     {
         // get single transaction
@@ -128,6 +181,9 @@ class TransactionsController extends Controller
             $transaction = Transaction::where('id', $transactionId)
                 ->with('itemDetails')
                 ->with('customer')
+                ->with('refTransaction', function ($q) {
+                    $q->with('itemDetails');
+                })
                 ->first();
             $ctr = 0;
             foreach ($transaction->itemDetails as $transactionDetail) {

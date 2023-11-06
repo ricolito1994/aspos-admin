@@ -144,6 +144,18 @@ export function getTransactions (company_id, branch_id, searchString, transFrom,
     })
 }
 
+export function searchTransaction (searchString, company_id, branch_id) {
+    let productsRequest = axios.get(`${host}/transaction/search/${searchString}/${company_id}/${branch_id}/`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
 export function saveTransaction (transaction) {
     let productsRequest = axiosLoading.post(`${host}/transaction/save`, transaction);
     return new Promise ((resolve, reject) => {
@@ -162,6 +174,18 @@ export function getCustomers ( company_id , searchString , customerType ) {
     let productsRequest = axios.get(`${host}/customers/get/${company_id}/${customerType}/${searchString}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+export function saveCustomer (customer) {
+    let customerSave = axiosLoading.post(`${host}/customers/save`, customer);
+    return new Promise ((resolve, reject) => {
+        customerSave.then(res => {
             resolve(res)
         })
         .catch(err=>{

@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\Customer;
@@ -16,41 +17,35 @@ class CustomerController extends Controller
     }
 
 
-    public function create (Request $request) 
+    public function save (Request $request) 
     {
         $data = $request->all();
-        $cust = $data['customer'];
-  
+        $cust = $data;
+
         try {
             DB::beginTransaction();
             $user = User::where('id', Auth::id())->first();
-            $validate = Validator::make($prod,
+            $validate = Validator::make($cust,
             [
-                'customer_name' => 'required|string|unique:products|max:255',
-                'customer_code' => 'required|string|unique:products|max:255',
+                'customer_name' => 'required|string|max:255',
+                'customer_code' => 'required|string|max:255',
             ],
             [
-                'customer_code.unique' => 'Customer code already exists.',
-                'customer_name.unique' => 'Customer code already exists.',
                 'customer_code.required' => 'Customer code required.',
                 'customer_name.required' => 'Customer name required.',
             ]);
-            
-            $product = Product::updateOrCreate(
-                [
-                    'customer_code' => $prod['customer_code'], 
-                ],
-                [
-                    'customer_code' => $cust['customer_code'],
-                    'customer_name' => $cust['customer_name'],
-                    'pwd_no' => $cust['pwd_no'],
-                    'address' => $cust['address'],
-                    'company_id' => $cust['company_id'],
-                    'created_by' => $user->id,
-                ]);
+
+            if ($validate->fails()) {
+                return response()->json([
+                    'err' => $validate->errors()
+                ], 500);
+            }
+
+            $customer = Customer::updateOrCreate(
+                ['customer_code' => $cust['customer_code']], $cust);
            
             DB::commit();
-            return response()->json($product, 200);
+            return response()->json($customer, 200);
             
         } catch (Exception $e) {
             DB::rollback();

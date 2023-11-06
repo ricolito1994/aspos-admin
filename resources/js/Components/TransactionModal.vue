@@ -23,6 +23,7 @@ import {
 import {event} from '@/Services/EventBus';
 import {
     alertBox,
+    customerModal,
     ALERT_TYPE
 } from '@/Services/Alert'
 
@@ -63,6 +64,8 @@ const change = computed(() => transactionObject.amt_received - amount_payable.va
 const customerType = ref(2);
 
 const customerNamePlacer = ref ("");
+
+const productsError = ref([]);
 
 const amount_payable = computed(()=>{
     if (transactionObject.item_transaction_type == 'DELIVERY') {
@@ -111,13 +114,14 @@ const onSelectProduct = async (params) => {
     var prod = await getProduct(params.item.id)
         prod = prod.data;
 
-    console.log('params', params)
+    let indexSimilarProduct = transactionDetails.findIndex(x=>x.product_code == params.item.product_code);    
 
-    if (transactionDetails.find(x=>x.product_code == params.item.product_code)) {
-        alert (`${params.item.product_name} already exists.`);
+    if (indexSimilarProduct > -1) {
+        //alert (`${params.item.product_name} already exists.`);
+        transactionDetails[indexSimilarProduct].quantity++;
+        transactionDetails.splice(params.index, 1)
         return;
     }
-
     transactionDetails[params.index]['product'] = {
         p: params.item, // from /products/get remaining balance only
         q: prod, // from /products/get/{id} with pricelist and unit
@@ -126,6 +130,12 @@ const onSelectProduct = async (params) => {
     transactionDetails[params.index]['product_code'] = prod.product_code
     transactionDetails[params.index].product_id = prod.id;
 
+    if(prod.pricelist.length == 0) {
+        let errmsg = `${prod.product_name} no pricelist found.`;
+        alertBox (errmsg, ALERT_TYPE.ERR)
+        return;
+    }
+
     transactionDetails[params.index].units = prod.pricelist[0].unit;
     transactionDetails[params.index].unit = prod.pricelist[0].unit[0].unit_name;
     transactionDetails[params.index].unit_id = prod.pricelist[0].unit[0].id;
@@ -133,8 +143,8 @@ const onSelectProduct = async (params) => {
     transactionDetails[params.index].price_per_unit = prod.pricelist[0].unit[0].price_per_unit;
     transactionDetails[params.index].cost_per_unit = prod.pricelist[0].unit[0].cost_per_unit;
 
-    transactionDetails[params.index].total_cost = prod.pricelist[0].unit[0].price_per_unit * transactionDetails[params.index].quantity;
-    transactionDetails[params.index].total_price = prod.pricelist[0].unit[0].cost_per_unit * transactionDetails[params.index].quantity;
+    transactionDetails[params.index].total_cost = prod.pricelist[0].unit[0].cost_per_unit * transactionDetails[params.index].quantity;
+    transactionDetails[params.index].total_price = prod.pricelist[0].unit[0].price_per_unit * transactionDetails[params.index].quantity;
 
     computeTotals();
     convertQuantities(params.index);
@@ -145,8 +155,23 @@ const convertQuantities = (i) => {
     if (!p) return;
     let remBal = p.p.remaining_balance;
     if (p.p.remaining_balance == 0 && !transactionObject.stock) {
-        alert("Remaining balance is negative!")
-        transactionDetails[i].remaining_balance = transactionDetails[i].quantity;
+        let errmsg = `${p.p.product_name} remaining balance is negative`;
+        if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
+        transactionDetails[i].quantity = 0;
+        return;
+    }
+
+    if (transactionDetails[i].quantity <= 0) {
+        let errmsg = `${p.p.product_name} quantity must be greater than 0`;
+        if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
+        transactionDetails[i].quantity = 0;
+        return;
+    }
+
+    if (p.q.pricelist == 0) {
+        let errmsg = `${p.p.product_name} no pricelist found`;
+        if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
+        transactionDetails[i].quantity = 0;
         return;
     }
 
@@ -189,11 +214,15 @@ const convertQuantities = (i) => {
         !transactionObject.stock ? 
         remBal - transactionDetails[i].quantity: // if stock out (ransactionObject.stock == false), deduct to remaining balance
         remBal + transactionDetails[i].quantity; // if stock in (ransactionObject.stock == true), add to remaining balance
-
+    
     if (remainingBalance >= 0) {
+        let errmsg = `${p.p.product_name} remaining balance is negative`;
+        let errIndx = productsError.value.find(x => x === errmsg);
         transactionDetails[i].remaining_balance = remainingBalance;
+        if (errIndx > -1) productsError.value.splice(errIndx, 1)
     } else {
-        alert("Remaining balance is negative!") 
+        let errmsg = `${p.p.product_name} remaining balance is negative`;
+        if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
         return;
     }
 }
@@ -246,6 +275,14 @@ const removeItem = (transactionDetailIndex) => {
 }
 
 const save = async ( ) => {
+    tDetails()
+
+    if (productsError.value.length > 0) {
+        alertBox(productsError.value, ALERT_TYPE.ERR);
+        productsError.value = [];
+        return;
+    }
+
     if (transactionObject.item_transaction_type=='SALE' && change.value < 0) {
         alertBox('Insufficient amount', ALERT_TYPE.ERR);
         return;
@@ -283,6 +320,24 @@ const getCustomers1 = async (company_id, searchString) => {
     return data;
 }
 
+const tDetails = () => {
+    for (let i in transactionDetails) {
+        convertQuantities(i);
+    }
+}
+
+const openNewCustomer = () => {
+    customerModal({
+        'customer_type' : customerType.value,
+        'customer_code' : randomString(15, alphaNumeric.value),
+        'company_id' : companyObject.value.id,
+        'customer_name': '',
+        'pwd_no' : '',
+        'senior_citizen_no' : '',
+        'address' : '',
+    })
+}
+
 watch(
     () => transactionObject.item_transaction_type, 
     (newVal) => {   
@@ -290,7 +345,7 @@ watch(
         transactionObject.stock = itemTransactionTypes[newVal].stock;
         customerType.value = ((newVal == 'DELIVERY') ? 2 : 1);
         transactionObject.customer_id = '';
-        event.emit('TextAutoCompleteComponent:clearSearchText', "");
+        event.emit('TextAutoCompleteComponent:clearSearchText', "customer_name");
         for (let i in transactionDetails) {
             transactionDetails[i].item_transaction_type = newVal;
             transactionDetails[i].stock = transactionObject.stock;
@@ -345,6 +400,7 @@ onUnmounted(()=>{
     transactionObject.total_cost = 0.0;
     amount_payable.value = 0.0;
     change.value = 0.0;
+    productsError.value = [];
 })
 
 </script>
@@ -363,11 +419,12 @@ onUnmounted(()=>{
             <div style="width:33.33%; float:left; ">
                 <B>{{ transactionObject.item_transaction_type == 'SALE' ? 'CUSTOMER NAME' : 'SUPPLIER' }}</B>
                 <TextAutoComplete 
-                    :getData="getCustomers1" 
-                    itemName="customer_name" 
                     :itmName="transactionObject.customer ? transactionObject.customer.customer_name : customerNamePlacer" 
+                    :getData="getCustomers1" 
+                    :itemName="'customer_name'" 
                     :itemIndex="0"
                     :style="'width:90%'"
+                    :addNew=openNewCustomer
                     @onSelectItem="onSelectCustomer"
                 />
             </div>
@@ -476,7 +533,7 @@ onUnmounted(()=>{
                     <div style="clear:both"></div>
                 </div>
             </div>
-            <div style="width:100%;height:10%;;">
+            <div style="width:100%;height:10%;">
                 <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
                     Total Price <input type="text" v-model="transactionObject.total_price" />
                 </div>
@@ -494,13 +551,13 @@ onUnmounted(()=>{
                     </label>&nbsp;
                 </div>
                 <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
-                    Amount Payable <input type="text" v-model="transactionObject.final_amt_received" />
+                    Amount Payable <input disabled type="text" v-model="transactionObject.final_amt_received" />
                 </div>
-                <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
+                <div  v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
                     Amount <input type="text" v-model="transactionObject.amt_received" />
                 </div>
                 <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
-                    Change <input type="text" v-model="change" />
+                    Change <input disabled type="text" v-model="change" />
                 </div>
                 <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
                     Discount

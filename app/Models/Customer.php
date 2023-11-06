@@ -22,6 +22,7 @@ class Customer extends Model
         'address',
         'customer_type',
         'created_by',
+        'company_id',
     ];
 
     protected $dates = ['deleted_at'];

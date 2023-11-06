@@ -80,6 +80,7 @@ const tempTransaction = {
     customer_id : null,
     amt_released : null,
     change : 0.00,
+    ref_transaction_id: null,
 }
 
 const transaction = ref(tempTransaction);
@@ -251,10 +252,6 @@ const tableHeaders = ref([
     {
         name : 'TRANSACTION TYPE',
         field : 'transaction_type',
-    },
-    {
-        name : 'CANCELLED',
-        field : 'is_cancelled',
     },
     /* {
         name : 'STOCK',
