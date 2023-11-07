@@ -13,6 +13,7 @@ use App\Models\User;
 use DB;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 use Illuminate\Support\Facades\Validator;
@@ -130,6 +131,7 @@ class TransactionsController extends Controller
     {
         // get many transactions
         try {
+            
             $conds =  [
                 ['company_id', $companyId],
                 ['branch_id', $branchId],
@@ -142,7 +144,7 @@ class TransactionsController extends Controller
                 ->with('customer')
                 ->with('itemDetails', function ($q) {
                     $q->with('unit');
-                    $q->with('product', function ($q) {
+                    $q->with('product', function ($q){
                         $q->with('unit');
                     });
                 })
@@ -153,7 +155,6 @@ class TransactionsController extends Controller
                 })
                 ->orderBy('id', 'ASC')
                 ->get();
-
                 for ($i = 0 ; $i < count($transactions[0]->itemDetails); $i++) {
                     $transactionDetail = $transactions[0]->itemDetails[$i];
 

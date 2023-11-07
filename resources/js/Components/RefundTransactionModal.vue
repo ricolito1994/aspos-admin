@@ -28,6 +28,7 @@ import {
     customerModal,
     ALERT_TYPE
 } from '@/Services/Alert'
+import { convertQuantity } from '@/Services/StockService'
 
 
 import TransactionModalLayout from '@/Layouts/TransactionModalLayout.vue'
@@ -36,6 +37,7 @@ const itemTransactionTypes = reactive (TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACT
 
 const companyObject = reactive (JSON.parse(localStorage.getItem('company')));
 
+const totalAmountRefund = ref(0);
 
 const props = defineProps({
     transaction : {
@@ -54,8 +56,6 @@ const custName = ref("");
 const errors = ref([]);
 
 const transactionDetails = ref ([]);
-
-let tempTransactionDetails = reactive ([]);
 
 let transactionObject = reactive(props.transaction);
 
@@ -107,14 +107,19 @@ const onSelectTransaction = (selectedTransaction) => {
         let latestUnitName = sel.product.unit[sel.product.unit.findIndex(x => x.id === parseInt(sel.latest_rem_bal_unit))].unit_name;
         let latestRemainingBalance = selectedTransaction.item_details[i]['latest_rem_bal_qty'];
         selectedTransaction.item_details[i]['old_qty'] = parseFloat(sel.quantity);
-        selectedTransaction.item_details[i]['quantity'] = 0;
+        selectedTransaction.item_details[i]['quantity'] = selectedTransaction.item_details[i]['old_qty'];
         selectedTransaction.item_details[i]['latest_rem_bal_unit_name'] = latestUnitName;
         selectedTransaction.item_details[i]['remaining_balance'] = latestRemainingBalance;
     }
+    totalAmountRefund.value = 0;
     transactionDetails.value = selectedTransaction.item_details;
+    for (let i in selectedTransaction.item_details) {
+        changeQuantity(i, true)
+    }
 }
 
-const changeQuantity = (transactionIndex) => {
+const changeQuantity = (transactionIndex, onSelectProduct) => {
+    if(!onSelectProduct) totalAmountRefund.value = 0;
     let prodCost = transactionObject.item_details[transactionIndex].cost_per_unit;
     let prodPrice = transactionObject.item_details[transactionIndex].price_per_unit;
  
@@ -124,7 +129,6 @@ const changeQuantity = (transactionIndex) => {
     let quantity = parseFloat(transactionDetails.value[transactionIndex].quantity); 
     let latestRemainingBalance = transactionObject.item_details[transactionIndex].latest_rem_bal_qty;
 
-    
     let productName = transactionObject.item_details[transactionIndex].product.product_name;
     
     let errMsg1 = `${productName} must be greater than 0`;
@@ -138,16 +142,26 @@ const changeQuantity = (transactionIndex) => {
 
     let newPrice = Math.abs((quantity * prodPrice) - transPrice);
     let newCost = Math.abs((quantity * prodCost) - transCost);
-    let qty =  parseFloat(latestRemainingBalance) - quantity;
-    
-    if (transactionObject.item_transaction_type == 'SALE') {
         newPrice = Math.abs(newPrice - transPrice);
         newCost = Math.abs(newCost - transCost);
-        qty = quantity + parseFloat(latestRemainingBalance)
+
+    let convertedQuantity = convertQuantity(
+        transactionObject.item_details[transactionIndex].product.unit,
+        quantity,
+        transactionObject.item_details[transactionIndex].unit[0]
+    ); 
+
+    let remainintBalance =  parseFloat(latestRemainingBalance) - convertedQuantity;
+
+    if (transactionObject.item_transaction_type == 'SALE') {
+        totalAmountRefund.value += newPrice;
+        remainintBalance = convertedQuantity + parseFloat(latestRemainingBalance)
+    } else {
+        totalAmountRefund.value += newCost;
     }
 
     let errMsg2 = `${productName} quantity must not be greater than the ordered quantity.`;
-    if (quantity > transactionObject.item_details[transactionIndex].old_qty) {
+    if (convertedQuantity > transactionObject.item_details[transactionIndex].old_qty) {
         if (!errors.value.find(x=>x === errMsg2)) errors.value.push(errMsg2);
     } else {
         let indxErr = errors.value.findIndex(x=>x === errMsg2);
@@ -156,12 +170,30 @@ const changeQuantity = (transactionIndex) => {
     
     transactionDetails.value[transactionIndex].total_cost = newCost; 
     transactionDetails.value[transactionIndex].total_price = newPrice; 
-    transactionDetails.value[transactionIndex].remaining_balance = qty;
+    transactionDetails.value[transactionIndex].remaining_balance = remainintBalance;
 
     if (errors.value.length > 0) {
         alertBox(errors.value, ALERT_TYPE.ERR)
     }
+
+    if(!onSelectProduct) {  
+        calculateTotals(transactionIndex);
+    }
 }
+
+const calculateTotals = (excludeIndex) => {
+    for (let i in transactionDetails.value) {
+        if (i != excludeIndex) {
+            let sel = transactionDetails.value[i];
+            if (transactionObject.item_transaction_type == 'SALE') {
+                totalAmountRefund.value += sel.total_price;
+            } else {
+                totalAmountRefund.value += sel.total_cost;
+            }
+        }
+    }
+}
+
 onMounted (() => {
     transactionDetails.value = props.transaction.id ? 
         props.transaction.item_details : [];
@@ -214,7 +246,7 @@ onMounted (() => {
             <div style="background-color: #f0534017; width:100%; height:65%; margin-top:1%; padding:0.5%;" >
                 <div class="scrollbar" style="width:100%;max-width:150%;height:85%;max-height:85%; overflow:auto;">
                     <div style="width:100%;height:15%;">
-                        <div style="float:left; width:20%; padding:1%;">
+                        <div style="float:left; width:35%; padding:1%;">
                             Product Name
                         </div>
                         <div style="float:left; width:10%; padding:1%;">
@@ -226,10 +258,13 @@ onMounted (() => {
                         <div style="float:left; width:15%; padding:1%;">
                             Unit
                         </div>
-                        <div style="float:left; width:15%; padding:1%;">
+                        <div 
+                            v-if="transactionObject.item_transaction_type == 'DELIVERY'" 
+                            style="float:left; width:15%; padding:1%;"
+                        >
                             Total Cost
                         </div>
-                        <div style="float:left; width:15%; padding:1%;">
+                        <div v-else style="float:left; width:15%; padding:1%;">
                             Total Price
                         </div>
                         <div style="float:left; width:15%; padding:1%;">
@@ -243,7 +278,7 @@ onMounted (() => {
                         v-bind:key="transactionDetail.indx" 
                         style="width:100%;"
                     >
-                        <div style="float:left; width:20%; padding:1%;">
+                        <div style="float:left; width:35%; padding:1%;">
                             <input disabled type="text" v-model="transactionDetail.product.product_name" style="width:100%;"/>
                         </div>
                         <div style="float:left; width:10%; padding:1%;">
@@ -271,10 +306,10 @@ onMounted (() => {
                             </select>
                         </div>
                         
-                        <div style="float:left; width:15%; padding:1%;">
+                        <div v-if="transactionObject.item_transaction_type == 'DELIVERY'" style="float:left; width:15%; padding:1%;">
                             <input disabled v-model="transactionDetail.total_cost" type="text" style="width:100%;"/>
                         </div>
-                        <div style="float:left; width:15%; padding:1%;">
+                        <div v-else style="float:left; width:15%; padding:1%;">
                             <input disabled v-model="transactionDetail.total_price" type="text" style="width:100%;"/>
                         </div>
                         <div style="float:left; width:15%; padding:1%;">
@@ -289,9 +324,19 @@ onMounted (() => {
                 </div>
                 <div style="width:100%;height:10%;">
                     <div style='float:left; width:15%;'>
-                        Refund Amount <input type="text" />
+                        Refund Amount <input type="text" v-model="totalAmountRefund" />
                     </div>
+                    <div 
+                        style='float:left; padding-top: 0.5%; width:25%; padding-left: 25px; cursor: pointer;'
+                    >
+                    <br> 
+                    <input type="checkbox"   id="is_full_refund" /> &nbsp;
+                    <label style="cursor: pointer;" :for="`is_full_refund`" >
+                        <b>FULL REFUND</b>
+                    </label>&nbsp;
                 </div>
+                </div>
+                
             </div>
             <div style=" width:100%; height:23%; margin-top:1%;" >
                 <div style="width:33.33%;float:left;">
