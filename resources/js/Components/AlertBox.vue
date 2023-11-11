@@ -7,7 +7,7 @@ import {
     onUnmounted, 
     ref,
 } from 'vue';
-
+import {CONFIRMATION_MESSAGE_ALERT} from '@/Services/Alert'
 
 const props = defineProps({
 })
@@ -85,6 +85,9 @@ onUnmounted (() => {
                     <li v-for="(msg, index) in message" :key="index"> {{ msg }}</li>
                 </ul>
             </div>   
+            <div style="margin-top:1%;font-size: 20px;" v-if="alertType.value === 'confirmation'">
+                <b>{{ CONFIRMATION_MESSAGE_ALERT }}</b>
+            </div>
         </div>
     
         <div id="modal-footer">

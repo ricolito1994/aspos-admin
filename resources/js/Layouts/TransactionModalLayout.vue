@@ -49,7 +49,7 @@ const closeModal = () => {
 }
 
 const save = () => {
-
+    emit('onSave');
 }
 </script>
 <template>
@@ -63,7 +63,11 @@ const save = () => {
         <div style="clear:both"></div>
     </div>
     <div id="modal-content">
-        <slot name="transaction" :branch-object="branchObject" :user-object="userObject"/>
+        <slot 
+            name="transaction" 
+            :branch-object="branchObject" 
+            :user-object="userObject"
+        />
     </div>
     <div id="modal-footer">
         <div style="float:right">

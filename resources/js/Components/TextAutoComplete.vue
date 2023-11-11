@@ -140,7 +140,7 @@ onUnmounted(() => {
             <div v-if="isLoading">
                 <span>Loading ...</span>
             </div>
-            <div v-if="results.length > 0 && searchString !== ''">
+            <div v-if="(results.length > 0 && searchString !== '') && !isLoading">
                 <div 
                     :class='currentIndex==index ? "results active" : "results"' 
                     v-for="(result, index) in results" 

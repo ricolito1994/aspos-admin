@@ -1,7 +1,7 @@
 export const convertQuantity = (
-    unitArray, // array of units of the specified product
-    quantity, // quantity to be converted
-    unitObj // actual unit of this transaction
+    unitArray,
+    quantity,
+    unitObj,
 ) => {
     let selUnit = unitArray.find(x => x.id === unitObj.id)
     let j = unitObj.heirarchy - 1;
@@ -9,8 +9,6 @@ export const convertQuantity = (
     let ctr =  selUnit.heirarchy - 1 ;
     while ( cdn ? ctr >= j : ctr <= j ) {
         let sUnit = unitArray[j];
-        // if unit of remaining balance 
-        // is less than of the selected unit of qty
         if (!cdn) {
             quantity /= parseFloat(sUnit.parent_quantity);
             j--;

@@ -21,7 +21,8 @@ import {
     TRANSACTION_MODAL_CONSTANTS,
     DISCOUNT_LIST,
     VAT_PERCENT,
-} from '@/Constants'
+} from '@/Constants';
+import moment from 'moment';
 import {event} from '@/Services/EventBus';
 import {
     alertBox,
@@ -30,7 +31,6 @@ import {
 } from '@/Services/Alert'
 import { convertQuantity } from '@/Services/StockService'
 
-
 import TransactionModalLayout from '@/Layouts/TransactionModalLayout.vue'
 
 const itemTransactionTypes = reactive (TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.types)
@@ -38,6 +38,8 @@ const itemTransactionTypes = reactive (TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACT
 const companyObject = reactive (JSON.parse(localStorage.getItem('company')));
 
 const totalAmountRefund = ref(0);
+
+const currentDate = ref(moment().format('YYYY-MM-DD'));
 
 const props = defineProps({
     transaction : {
@@ -55,6 +57,8 @@ const custName = ref("");
 
 const errors = ref([]);
 
+const confirms = ref([]);
+
 const transactionDetails = ref ([]);
 
 let transactionObject = reactive(props.transaction);
@@ -71,8 +75,41 @@ const addTransaction = (arg) => {
 
 const title = ref (props.type.title);
 
-const save = () => {
+const save = async () => {
+    recheckForQtyZero();
 
+    if (errors.value.length > 0) {
+        alertBox(errors.value, ALERT_TYPE.ERR);
+        return;
+    }
+
+    let confirm = true;
+    if (confirms.value.length > 0) {
+        confirm = await alertBox(confirms.value, ALERT_TYPE.CONFIRMATION);
+    }
+
+
+    if (confirm) {
+        console.log(confirm, transactionObject.stock)
+    };
+}
+
+const recheckForQtyZero = () => {
+    let numZeroQty = transactionDetails.value.length;
+    for (let i in transactionDetails.value) {
+        let sel = transactionDetails.value[i];
+        if (sel.quantity <= 0) {
+            numZeroQty--;
+        }
+    }
+
+    let errMsg2 = `Please make at least 1 item to have a quantity more than 0.`;
+    if ( numZeroQty <= 0 ) {
+        if (!errors.value.find(x=>x === errMsg2)) errors.value.push(errMsg2);
+    } else {
+        let indxErr = errors.value.findIndex(x=>x === errMsg2);
+        if (indxErr > -1) errors.value.splice(indxErr, 1);
+    }
 }
 
 const searchTransactions = (index, searchString) => {
@@ -92,16 +129,22 @@ const searchTransactions = (index, searchString) => {
 
 
 const onSelectTransaction = (selectedTransaction) => {
-    selectedTransaction = selectedTransaction.item; 
-    let msg = `This transaction is already referenced to another transaction. Cannot select this transaction.`;
-    if (selectedTransaction.ref_transaction_id) {
-        alertBox(msg, ALERT_TYPE.ERR)
-        if (!errors.value.find(x=>x === msg)) errors.value.push(msg);
-    } else {
-        let indxErr = errors.value.findIndex(x=>x === msg)
-        if (indxErr > -1) errors.value.splice(indxErr, 1);
+    selectedTransaction = selectedTransaction.item ? selectedTransaction.item : selectedTransaction; 
+    if (selectedTransaction.item) {
+        let msg = `This transaction is already referenced to another transaction. Cannot select this transaction.`;
+        if (selectedTransaction.ref_transaction_id) {
+            alertBox(msg, ALERT_TYPE.ERR)
+            if (!errors.value.find(x=>x === msg)) errors.value.push(msg);
+        } else {
+            let indxErr = errors.value.findIndex(x=>x === msg)
+            if (indxErr > -1) errors.value.splice(indxErr, 1);
+        }
     }
+
     transactionObject = selectedTransaction;
+    transactionObject.stock = selectedTransaction.stock == 0 ? 1 : 0;
+    transactionObject.ref_transaction_id = selectedTransaction.id;
+
     for (let i in selectedTransaction.item_details) {
         let sel = selectedTransaction.item_details[i];
         let latestUnitName = sel.product.unit[sel.product.unit.findIndex(x => x.id === parseInt(sel.latest_rem_bal_unit))].unit_name;
@@ -151,11 +194,11 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         transactionObject.item_details[transactionIndex].unit[0]
     ); 
 
-    let remainintBalance =  parseFloat(latestRemainingBalance) - convertedQuantity;
+    let remainingBalance =  parseFloat(latestRemainingBalance) - convertedQuantity;
 
     if (transactionObject.item_transaction_type == 'SALE') {
         totalAmountRefund.value += newPrice;
-        remainintBalance = convertedQuantity + parseFloat(latestRemainingBalance)
+        remainingBalance = convertedQuantity + parseFloat(latestRemainingBalance)
     } else {
         totalAmountRefund.value += newCost;
     }
@@ -167,17 +210,34 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         let indxErr = errors.value.findIndex(x=>x === errMsg2);
         if (indxErr > -1) errors.value.splice(indxErr, 1);
     }
+
+    let confirmMsg1 = `${productName} quantity is less than 0.`;
+    if (remainingBalance < 0) {
+        if (!confirms.value.find(x=>x === confirmMsg1)) confirms.value.push(confirmMsg1);
+    } else {
+        let indxConf = confirms.value.findIndex(x=>x === confirmMsg1);
+        if (indxConf > -1) confirms.value.splice(indxConf, 1);
+    }
     
     transactionDetails.value[transactionIndex].total_cost = newCost; 
     transactionDetails.value[transactionIndex].total_price = newPrice; 
-    transactionDetails.value[transactionIndex].remaining_balance = remainintBalance;
+    transactionDetails.value[transactionIndex].remaining_balance = remainingBalance;
+
+    recheckForQtyZero();
+
+    if(!onSelectProduct) {  
+        calculateTotals(transactionIndex);
+    }
 
     if (errors.value.length > 0) {
         alertBox(errors.value, ALERT_TYPE.ERR)
     }
 
-    if(!onSelectProduct) {  
-        calculateTotals(transactionIndex);
+    transactionObject[transactionObject.item_transaction_type == 'SALE' ? 'amt_received' : 'amt_released']
+        = totalAmountRefund.value;
+
+    if (transactionObject.item_transaction_type == 'SALE') {
+        transactionObject['final_amt_released'] = totalAmountRefund.value;
     }
 }
 
@@ -197,6 +257,14 @@ const calculateTotals = (excludeIndex) => {
 onMounted (() => {
     transactionDetails.value = props.transaction.id ? 
         props.transaction.item_details : [];
+
+    currentDate.value = 
+        transactionObject.created_at ? transactionObject.created_at : currentDate.value;
+
+    transactionObject.transaction_type = props.type;
+
+    if (transactionObject.id) 
+        onSelectTransaction(transactionObject)
 })
 
 </script>
@@ -292,7 +360,7 @@ onMounted (() => {
                         <div style="float:left; width:10%; padding:1%;">
                             <input 
                                 v-model="transactionDetail.quantity"
-                                @change="changeQuantity(transactionDetailIndex)"
+                                @keyup="changeQuantity(transactionDetailIndex)"
                                 style="width:100%;"   
                                 type="text"
                             />
@@ -324,16 +392,22 @@ onMounted (() => {
                 </div>
                 <div style="width:100%;height:10%;">
                     <div style='float:left; width:15%;'>
-                        Refund Amount <input type="text" v-model="totalAmountRefund" />
+                        Refund Amount
+                        <input  
+                            type="text" 
+                            v-model="transactionObject.amt_released"
+                            v-if="transactionObject.item_transaction_type == 'DELIVERY'" 
+                        />
+                        <input v-else type="text" v-model="transactionObject.amt_received" />
                     </div>
                     <div 
                         style='float:left; padding-top: 0.5%; width:25%; padding-left: 25px; cursor: pointer;'
                     >
                     <br> 
-                    <input type="checkbox"   id="is_full_refund" /> &nbsp;
+                    <!---<input type="checkbox"   id="is_full_refund" /> &nbsp;
                     <label style="cursor: pointer;" :for="`is_full_refund`" >
                         <b>FULL REFUND</b>
-                    </label>&nbsp;
+                    </label>&nbsp;-->
                 </div>
                 </div>
                 
@@ -356,7 +430,11 @@ onMounted (() => {
                 <div style="width:33.33%;float:left;">
                     <div>
                         <B>DATE</B>
-                        <input disabled  type="date" style="width:100%;"/>
+                        <input disabled v-model="transactionObject.transaction_date"  type="date" style="width:100%;"/>
+                    </div>
+                    <div style="margin-top:2%;">
+                        <B>REFUND DATE</B>
+                        <input disabled type="date" v-model="currentDate" style="width:100%;"/>
                     </div>
                 </div>
             </div>

@@ -19,6 +19,9 @@ export const ALERT_TYPE = {
     },
 }
 
+export const CONFIRMATION_MESSAGE_ALERT 
+    = `Are you sure you want to continue?`;
+
 export const alertBox = (message, alertType) => {
     event.emit('AlertBox:open', {
         message: message,
