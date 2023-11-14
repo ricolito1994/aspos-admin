@@ -59,7 +59,15 @@ class TransactionsController extends Controller
             $transactionData = $req['transaction'];
             $transactionDetails = $req['transactionDetails'];
 
-            $omitsToTransaction = ['units','product','indx'];
+            $omitsToTransaction = [
+                'units',
+                'product',
+                'indx',
+                'old_qty',
+                'latest_rem_bal_unit_name',
+                "latest_rem_bal_qty",
+                "latest_rem_bal_unit",
+            ];
             foreach ($transactionDetails as $j => $td) {
                 foreach ($omitsToTransaction as $k => $omcm) {
                     if(isset($transactionDetails[$j][$omitsToTransaction[$k]]) )
@@ -67,15 +75,12 @@ class TransactionsController extends Controller
                 }
             }
             
-
             if ($req['isCreate']) {
                 $transaction = Transaction::create($transactionData);
-
+                
                 foreach ($transactionDetails as $transactionDetail) {
                     // iterate through transaction details
-                    $transaction
-                        ->itemDetails()
-                        ->create($transactionDetail);
+                    $transaction->itemDetails()->create($transactionDetail);
                 }
             } else {
                 $transaction = Transaction::updateOrCreate([

@@ -36,6 +36,7 @@ class Transaction extends Model
         'item_transaction_type',
         'vat',
         'amt_released',
+        'ref_transaction_id',
     ];
 
     protected $dates = ['deleted_at'];

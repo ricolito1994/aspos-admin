@@ -30,6 +30,7 @@ import {
     ALERT_TYPE
 } from '@/Services/Alert'
 import { convertQuantity } from '@/Services/StockService'
+import { randomString } from '@/Services/CodeGenerator';
 
 import TransactionModalLayout from '@/Layouts/TransactionModalLayout.vue'
 
@@ -38,6 +39,8 @@ const itemTransactionTypes = reactive (TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACT
 const companyObject = reactive (JSON.parse(localStorage.getItem('company')));
 
 const totalAmountRefund = ref(0);
+
+const isUpdate = ref (false);
 
 const currentDate = ref(moment().format('YYYY-MM-DD'));
 
@@ -59,6 +62,8 @@ const errors = ref([]);
 
 const confirms = ref([]);
 
+const defaultStock = ref(null);
+
 const transactionDetails = ref ([]);
 
 let transactionObject = reactive(props.transaction);
@@ -75,6 +80,8 @@ const addTransaction = (arg) => {
 
 const title = ref (props.type.title);
 
+const item_transaction_type = ref ("");
+
 const save = async () => {
     recheckForQtyZero();
 
@@ -90,7 +97,28 @@ const save = async () => {
 
 
     if (confirm) {
-        console.log(confirm, transactionObject.stock)
+        try {
+            transactionObject.transaction_type = props.type.value;
+            transactionObject.transaction_date = currentDate.value;
+            
+            isUpdate.value = !isUpdate.value;
+
+            let transaction = await saveTransaction({
+                transaction: transactionObject,
+                transactionDetails: transactionDetails.value,
+                isCreate :  isUpdate.value,
+            });
+
+            transaction.data.res['isUpdate'] = isUpdate.value;
+            transactionObject = transaction.data.res;
+
+            alertBox('Transaction success!', ALERT_TYPE.MSG);
+            emit('onAddTransaction', transaction.data.res); 
+
+        } catch (e) {
+            alertBox(e.response.data.err ? e.response.data.err : e.response.data.message, 
+                ALERT_TYPE.ERR);
+        }
     };
 }
 
@@ -130,6 +158,7 @@ const searchTransactions = (index, searchString) => {
 
 const onSelectTransaction = (selectedTransaction) => {
     selectedTransaction = selectedTransaction.item ? selectedTransaction.item : selectedTransaction; 
+
     if (selectedTransaction.item) {
         let msg = `This transaction is already referenced to another transaction. Cannot select this transaction.`;
         if (selectedTransaction.ref_transaction_id) {
@@ -142,17 +171,42 @@ const onSelectTransaction = (selectedTransaction) => {
     }
 
     transactionObject = selectedTransaction;
-    transactionObject.stock = selectedTransaction.stock == 0 ? 1 : 0;
-    transactionObject.ref_transaction_id = selectedTransaction.id;
+    transactionObject.transaction_code = !selectedTransaction.ref_transaction ? randomString(15) : 
+        selectedTransaction.ref_transaction.transaction_code;
 
+    defaultStock.value = !selectedTransaction.ref_transaction ? selectedTransaction.stock : 
+        selectedTransaction.ref_transaction.stock;
+    transactionObject.stock = selectedTransaction.stock == 0 ? 1 : 0;
+    transactionObject.ref_transaction_id = !selectedTransaction.ref_transaction ? selectedTransaction.id : 
+        selectedTransaction.ref_transaction.id;
+    item_transaction_type.value = transactionObject.item_transaction_type !== '-' ? transactionObject.item_transaction_type:
+        transactionObject.ref_transaction.item_transaction_type;
+
+    transactionObject.item_transaction_type = '-';
+    
     for (let i in selectedTransaction.item_details) {
         let sel = selectedTransaction.item_details[i];
-        let latestUnitName = sel.product.unit[sel.product.unit.findIndex(x => x.id === parseInt(sel.latest_rem_bal_unit))].unit_name;
-        let latestRemainingBalance = selectedTransaction.item_details[i]['latest_rem_bal_qty'];
-        selectedTransaction.item_details[i]['old_qty'] = parseFloat(sel.quantity);
-        selectedTransaction.item_details[i]['quantity'] = selectedTransaction.item_details[i]['old_qty'];
+       
+        let product = sel.product ? sel.product : sel.pp;
+        
+        let latestUnitName = sel.latest_rem_bal_unit ? 
+            product.unit[product.unit.findIndex(x => x.id === parseInt(sel.latest_rem_bal_unit))].unit_name : 
+            selectedTransaction.ref_transaction.item_details[i].unit;
+        
+        let latestRemainingBalance = selectedTransaction.item_details[i]['latest_rem_bal_qty'] ? selectedTransaction.item_details[i]['latest_rem_bal_qty'] :
+            sel.remaining_balance;
+        let selUnits = typeof sel['unit'] !== 'string' ? sel['unit']  : sel.pp.unit;
+        let selectedUnit = selUnits.find(x => x.id == sel.unit_id) ;
+        selectedTransaction.item_details[i]['units'] = selUnits;
+        selectedTransaction.item_details[i]['unit'] = selectedUnit.unit_name;
+        selectedTransaction.item_details[i]['old_qty'] = 
+            parseFloat(selectedTransaction.ref_transaction ? selectedTransaction.ref_transaction.item_details[i].quantity : sel.quantity);
+        selectedTransaction.item_details[i]['stock'] = transactionObject.stock;
+        selectedTransaction.item_details[i]['quantity'] = sel.quantity;
         selectedTransaction.item_details[i]['latest_rem_bal_unit_name'] = latestUnitName;
         selectedTransaction.item_details[i]['remaining_balance'] = latestRemainingBalance;
+        selectedTransaction.item_details[i]['item_transaction_type'] = '-';
+        selectedTransaction.item_details[i]['transaction_type'] = props.type.value;
     }
     totalAmountRefund.value = 0;
     transactionDetails.value = selectedTransaction.item_details;
@@ -171,8 +225,11 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
 
     let quantity = parseFloat(transactionDetails.value[transactionIndex].quantity); 
     let latestRemainingBalance = transactionObject.item_details[transactionIndex].latest_rem_bal_qty;
-
-    let productName = transactionObject.item_details[transactionIndex].product.product_name;
+    let selProduct = transactionObject.item_details[transactionIndex].product ? transactionObject.item_details[transactionIndex].product :
+        transactionObject.item_details[transactionIndex].pp;
+    let productName = transactionObject.item_details[transactionIndex].product ?
+        transactionObject.item_details[transactionIndex].product.product_name :
+        transactionObject.item_details[transactionIndex].pp.product_name;
     
     let errMsg1 = `${productName} must be greater than 0`;
     if (quantity < 0) {
@@ -182,24 +239,25 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         if (indxErr > -1) errors.value.splice(indxErr, 1);
     }
 
-
     let newPrice = Math.abs((quantity * prodPrice) - transPrice);
     let newCost = Math.abs((quantity * prodCost) - transCost);
         newPrice = Math.abs(newPrice - transPrice);
         newCost = Math.abs(newCost - transCost);
-
+    
+    let selectedUnitIndex = transactionObject.item_details[transactionIndex].units.findIndex(x => x.id == transactionObject.item_details[transactionIndex].unit_id)
+    
     let convertedQuantity = convertQuantity(
-        transactionObject.item_details[transactionIndex].product.unit,
+        selProduct.unit,
         quantity,
-        transactionObject.item_details[transactionIndex].unit[0]
+        transactionObject.item_details[transactionIndex].units[selectedUnitIndex]
     ); 
 
-    let remainingBalance =  parseFloat(latestRemainingBalance) - convertedQuantity;
-
-    if (transactionObject.item_transaction_type == 'SALE') {
+    let remainingBalance = 0;
+    if (defaultStock.value == 0) {
         totalAmountRefund.value += newPrice;
         remainingBalance = convertedQuantity + parseFloat(latestRemainingBalance)
     } else {
+        remainingBalance = parseFloat(latestRemainingBalance) - convertedQuantity;
         totalAmountRefund.value += newCost;
     }
 
@@ -221,7 +279,8 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
     
     transactionDetails.value[transactionIndex].total_cost = newCost; 
     transactionDetails.value[transactionIndex].total_price = newPrice; 
-    transactionDetails.value[transactionIndex].remaining_balance = remainingBalance;
+    transactionDetails.value[transactionIndex].remaining_balance = 
+        latestRemainingBalance ? remainingBalance : transactionObject.item_details[transactionIndex].remaining_balance;
 
     recheckForQtyZero();
 
@@ -233,10 +292,10 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         alertBox(errors.value, ALERT_TYPE.ERR)
     }
 
-    transactionObject[transactionObject.item_transaction_type == 'SALE' ? 'amt_received' : 'amt_released']
+    transactionObject[defaultStock.value == 0 ? 'amt_received' : 'amt_released']
         = totalAmountRefund.value;
 
-    if (transactionObject.item_transaction_type == 'SALE') {
+    if (defaultStock.value == 0) {
         transactionObject['final_amt_released'] = totalAmountRefund.value;
     }
 }
@@ -245,7 +304,7 @@ const calculateTotals = (excludeIndex) => {
     for (let i in transactionDetails.value) {
         if (i != excludeIndex) {
             let sel = transactionDetails.value[i];
-            if (transactionObject.item_transaction_type == 'SALE') {
+            if (defaultStock.value == 0) {
                 totalAmountRefund.value += sel.total_price;
             } else {
                 totalAmountRefund.value += sel.total_cost;
@@ -255,17 +314,28 @@ const calculateTotals = (excludeIndex) => {
 }
 
 onMounted (() => {
+    console.log(props.transaction)
     transactionDetails.value = props.transaction.id ? 
         props.transaction.item_details : [];
 
     currentDate.value = 
         transactionObject.created_at ? transactionObject.created_at : currentDate.value;
 
-    transactionObject.transaction_type = props.type;
+    transactionObject.transaction_type = props.type.value;
 
-    if (transactionObject.id) 
+    if (transactionObject.id) {
+        currentDate.value = transactionObject.transaction_date;
+        isUpdate.value = true;
+        transactionObject.transaction_date = transactionObject.ref_transaction.transaction_date;
         onSelectTransaction(transactionObject)
+    }
 })
+
+onUnmounted(() => { 
+    delete transactionObject.transactionDetails;
+    delete props.transaction;
+    transactionObject = {};
+});
 
 </script>
 <template>
@@ -293,7 +363,17 @@ onMounted (() => {
                 <div style="width:33.33%; float:left; ">
                     <B>SEARCH TRANSACTION CODE</B>
                     <TextAutoComplete 
-                        :itmName="transactionObject.ref_transaction_id" 
+                        v-if="transactionObject.ref_transaction"
+                        :itmName="transactionObject.ref_transaction.transaction_code" 
+                        :getData="searchTransactions" 
+                        :itemName="'transaction_code'" 
+                        :itemIndex="0"
+                        :style="'width:90%'"
+                        @onSelectItem="onSelectTransaction"
+                    />
+                    <TextAutoComplete 
+                        v-else
+                        :itmName="transactionObject.transaction_code" 
                         :getData="searchTransactions" 
                         :itemName="'transaction_code'" 
                         :itemIndex="0"
@@ -303,7 +383,7 @@ onMounted (() => {
                 </div>
                 <div style="width:33.33%;float:left;;">
                     <B>TRANSACTION TYPE</B>
-                    <select disabled v-model="transactionObject.item_transaction_type" style="width:100%;">
+                    <select disabled v-model="item_transaction_type" style="width:100%;">
                         <option v-for="(t, index) in itemTransactionTypes" :key="index" :value="index">
                             {{ index }}
                         </option>
@@ -327,7 +407,7 @@ onMounted (() => {
                             Unit
                         </div>
                         <div 
-                            v-if="transactionObject.item_transaction_type == 'DELIVERY'" 
+                            v-if="defaultStock == 1" 
                             style="float:left; width:15%; padding:1%;"
                         >
                             Total Cost
@@ -347,7 +427,8 @@ onMounted (() => {
                         style="width:100%;"
                     >
                         <div style="float:left; width:35%; padding:1%;">
-                            <input disabled type="text" v-model="transactionDetail.product.product_name" style="width:100%;"/>
+                            <input v-if="transactionDetail.product" disabled type="text" v-model="transactionDetail.product.product_name" style="width:100%;"/>
+                            <input v-else disabled type="text" v-model="transactionDetail.pp.product_name" style="width:100%;"/>
                         </div>
                         <div style="float:left; width:10%; padding:1%;">
                             <input 
@@ -368,13 +449,12 @@ onMounted (() => {
 
                         <div style="float:left; width:15%; padding:1%;"> 
                             <select disabled v-model="transactionDetail.unit_id" type="text" style="width:99%;">
-                                <option v-for="(unit, uIndex) in transactionDetail.unit" :key="uIndex" :value="unit.id">
+                                <option v-for="(unit, uIndex) in transactionDetail.units" :key="uIndex" :value="unit.id">
                                     {{ unit.unit_name }}
                                 </option>
                             </select>
                         </div>
-                        
-                        <div v-if="transactionObject.item_transaction_type == 'DELIVERY'" style="float:left; width:15%; padding:1%;">
+                        <div v-if="defaultStock == 1" style="float:left; width:15%; padding:1%;">
                             <input disabled v-model="transactionDetail.total_cost" type="text" style="width:100%;"/>
                         </div>
                         <div v-else style="float:left; width:15%; padding:1%;">
@@ -384,7 +464,6 @@ onMounted (() => {
                             <input disabled v-model="transactionDetail.remaining_balance" type="text" style="width:50%;"/> 
                             &nbsp;<b>{{ transactionDetail.latest_rem_bal_unit_name }}</b>
                         </div>
-                        
                         <div style="clear:both"></div>
                         </div>
                         <div  style="width:100%;height:85%;">
@@ -396,7 +475,7 @@ onMounted (() => {
                         <input  
                             type="text" 
                             v-model="transactionObject.amt_released"
-                            v-if="transactionObject.item_transaction_type == 'DELIVERY'" 
+                            v-if="defaultStock == 1" 
                         />
                         <input v-else type="text" v-model="transactionObject.amt_received" />
                     </div>
@@ -404,18 +483,13 @@ onMounted (() => {
                         style='float:left; padding-top: 0.5%; width:25%; padding-left: 25px; cursor: pointer;'
                     >
                     <br> 
-                    <!---<input type="checkbox"   id="is_full_refund" /> &nbsp;
-                    <label style="cursor: pointer;" :for="`is_full_refund`" >
-                        <b>FULL REFUND</b>
-                    </label>&nbsp;-->
                 </div>
                 </div>
-                
             </div>
             <div style=" width:100%; height:23%; margin-top:1%;" >
                 <div style="width:33.33%;float:left;">
                     <B>REASON</B>
-                    <textarea style="width:95%; resize:none;" rows="4"/>
+                    <textarea v-model="transactionObject.transaction_desc" style="width:95%; resize:none;" rows="4"/>
                 </div>
                 <div style="width:33.33%;float:left;">
                     <div>

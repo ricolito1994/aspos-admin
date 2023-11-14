@@ -53,9 +53,19 @@ let selectedPage = ref(1);
                     <!--result goes here-->
                     <tr v-for="(res, index) in resultData" :key="index">
                         <td v-for="(thead, index0) in tableHeaders" :key="index0" >
-                            <span v-if="thead.name !== 'ACTIONS'">{{ res[thead.field] }}</span>
+                            <span v-if="thead.name !== 'ACTIONS' && !thead.fxn">
+                                {{ res[thead.field] }}
+                            </span>
+                            <span v-if="thead.name !== 'ACTIONS' && thead.fxn">
+                                {{ thead.fxn(res) }}
+                            </span>
                             <span v-if="thead.name == 'ACTIONS'">
-                                <PrimaryButton v-for="(action, index1) in thead.actions" :key="index1" :additionalStyles="`background:${action.color}`" @click="action.func(res, index)">
+                                <PrimaryButton 
+                                    v-for="(action, index1) in thead.actions" 
+                                    :key="index1" 
+                                    :additionalStyles="`background:${action.color}`"
+                                    @click="action.func(res, index)"
+                                >
                                     {{ action.label }}
                                 </PrimaryButton>
                             </span>
@@ -66,7 +76,12 @@ let selectedPage = ref(1);
         </div>
         <div id="pagination" align="center">
             <div v-for="index in numPaginate" :key="index" class="paginate-btn-container">
-                <PrimaryButton :additionalStyles="selectedPage == index ? 'padding:10px; background:#f05340':'padding:10px;'" @click="paginate(index)">{{ index }}</PrimaryButton>
+                <PrimaryButton 
+                    :additionalStyles="selectedPage == index ? 'padding:10px; background:#f05340':'padding:10px;'"
+                    @click="paginate(index)"
+                >
+                 {{ index }}
+                </PrimaryButton>
             </div>
         </div>
     </div>

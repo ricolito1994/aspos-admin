@@ -47,6 +47,9 @@ const searchString = ref("");
 const transactionDateFrom = ref(currentDate);
 const transactionDateTo = ref(nextMonth);
 
+const startingCash = ref(parseFloat(0.0));
+const currentCash = ref(parseFloat(0.0));
+
 const isShowTransactionModal = ref(false);
 const isShowRefundModal = ref(false);
 const isShowReturnModal = ref(false);
@@ -182,26 +185,32 @@ const showTransactionModal = async (transactionArgument) => {
 
 const showRefundModal = () => {
     isShowRefundModal.value = !isShowRefundModal.value;   
+    if (!isShowRefundModal.value)  transaction.value = tempTransaction;
 }
 
 const showReturnModal = () => {
     isShowReturnModal.value = !isShowReturnModal.value;
+    if (!isShowReturnModal.value)  transaction.value = tempTransaction;
 }
 
 const showStartOfShiftModal = () => {
     isShowStartOfShiftModal.value = !isShowStartOfShiftModal.value;
+    if (!isShowStartOfShiftModal.value)  transaction.value = tempTransaction;
 }
 
 const showEndOfShiftModal = () => {
     isShowEndOfShiftModal.value = !isShowEndOfShiftModal.value;
+    if (!isShowEndOfShiftModal.value)  transaction.value = tempTransaction;
 }
 
 const showDepositCashModal = () => {
     isShowDepositCashModal.value = !isShowDepositCashModal.value;
+    if (!isShowDepositCashModal.value)  transaction.value = tempTransaction;
 }
 
 const showWithrawCashModal = () => {
     isShowWithrawCashModal.value = !isShowWithrawCashModal.value;
+    if (!isShowWithrawCashModal.value)  transaction.value = tempTransaction;
 }
 
 const onCloseDropDown = ( ) => {
@@ -252,6 +261,9 @@ const tableHeaders = ref([
     {
         name : 'TRANSACTION TYPE',
         field : 'transaction_type',
+        fxn : (res) => {
+            return res['transaction_type'];
+        }
     },
     /* {
         name : 'STOCK',
@@ -432,9 +444,14 @@ const tableHeaders = ref([
         <div style="width:100%;height:85%;">
             <DataTable @viewItemDetails=showTransactionModal :tableHeaders="tableHeaders" :resultData="resultData" />
         </div>
+        
+        <div style="width:100%;height:15%;">
+            <div><B>{{ transactionDateFrom }}</B></div>
+            <div><B>STARTING CASH : {{ startingCash }}</B></div>
+            <div><B>CURRENT CASH : {{ currentCash }}</B></div>
+        </div>
     </AppLayout>
 </template>
 
 <style scoped>
-
 </style>
