@@ -117,6 +117,7 @@ class TransactionsController extends Controller
             $transactions = Transaction::where ($conds)
                     ->whereBetween('transaction_date', [$transDateFrom, $transDateTo])
                     ->with('customer')
+                    ->with('createdBy')
                     ->orderBy('id', 'ASC')
                     ->get();
             
@@ -147,6 +148,7 @@ class TransactionsController extends Controller
                
             $transactions = Transaction::where ($conds)
                 ->with('customer')
+                ->with('createdBy')
                 ->with('itemDetails', function ($q) {
                     $q->with('unit');
                     $q->with('product', function ($q){
@@ -160,18 +162,20 @@ class TransactionsController extends Controller
                 })
                 ->orderBy('id', 'ASC')
                 ->get();
-                for ($i = 0 ; $i < count($transactions[0]->itemDetails); $i++) {
-                    $transactionDetail = $transactions[0]->itemDetails[$i];
+                if (count($transactions) > 0) {
+                    for ($i = 0 ; $i < count($transactions[0]->itemDetails); $i++) {
+                        $transactionDetail = $transactions[0]->itemDetails[$i];
 
-                    $rembal = TransactionDetail::where(function($q) use ($transactionDetail){
-                        $product_id=$transactionDetail->product_id;
-                        $q->whereRaw("id = (SELECT max(id) from transaction_details where product_id=$product_id)");
-                        $q->where("product_id", $product_id);
-                    })
-                    ->first();
-                    $transactionDetail['latest_rem_bal_qty'] = $rembal->remaining_balance;
-                    $transactionDetail['latest_rem_bal_unit'] = $rembal->unit_id;
-                    $transactions[0]->itemDetails[$i] = $transactionDetail;
+                        $rembal = TransactionDetail::where(function($q) use ($transactionDetail){
+                            $product_id=$transactionDetail->product_id;
+                            $q->whereRaw("id = (SELECT max(id) from transaction_details where product_id=$product_id)");
+                            $q->where("product_id", $product_id);
+                        })
+                        ->first();
+                        $transactionDetail['latest_rem_bal_qty'] = $rembal->remaining_balance;
+                        $transactionDetail['latest_rem_bal_unit'] = $rembal->unit_id;
+                        $transactions[0]->itemDetails[$i] = $transactionDetail;
+                    }
                 }
             return response()->json(['res' => $transactions], 200);
 
@@ -187,6 +191,7 @@ class TransactionsController extends Controller
             $transaction = Transaction::where('id', $transactionId)
                 ->with('itemDetails')
                 ->with('customer')
+                ->with('createdBy')
                 ->with('refTransaction', function ($q) {
                     $q->with('itemDetails');
                 })
@@ -205,6 +210,101 @@ class TransactionsController extends Controller
             return response()->json(['res' => $transaction], 200);
         } catch (Exception $e) {
             return response()->json(['err'=>$e], 500);  
+        }
+    }
+
+    public function getStartingBalance($userId, $date) {
+        try {
+            $conditions = [
+                ['user_id', $userId],
+                ['transaction_date', $date],
+            ];
+            $transaction = Transaction::where($conditions)
+                ->orderBy('id', 'asc')
+                ->first();
+            
+            return response()->json(['res' => $transaction], 200);
+        } catch (Exception $e) {
+            return response()->json(['err'=>$e], 500); 
+        }
+    }
+
+    public function getCurrentBalance($userId, $date) {
+        try {
+            $conditions = [
+                ['user_id', $userId],
+                ['transaction_date', $date],
+            ];
+            $transaction = Transaction::where($conditions)
+                ->whereNotNull('remaining_balance')
+                ->orderBy('id', 'desc')
+                ->first();
+            return response()->json(['res' => $transaction], 200);
+        } catch (Exception $e) {
+            return response()->json(['err'=>$e], 500); 
+        }
+    }
+
+
+    public function getTotalSales($userId, $date) {
+        try {
+            $totalPrice = 0;
+            $totalCost = 0;
+            $totalSale = 0;
+            $conditions = [
+                ['user_id', $userId],
+                ['transaction_date', $date],
+                ['transaction_type', 'ITEM_TRANSACTION'],
+                ['item_transaction_type', 'SALE']
+            ];
+            $transaction = Transaction::where($conditions)
+                ->orderBy('id', 'desc')
+                ->get();
+            foreach($transaction as $t) {
+                $totalPrice += $t['total_price'];
+                $totalCost += $t['total_cost'];
+            }
+            //dd($transaction);
+            $totalSale = $totalPrice - $totalCost;
+            
+            return response()->json(['res' => 
+                [
+                    'transactions' => $transaction,
+                    'total_sale' => $totalSale,
+                    'total_price' => $totalPrice,
+                    'total_cost' => $totalCost,
+                ]
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json(['err'=>$e], 500); 
+        }
+    }
+
+    public function getTotalExpenses($userId, $date) {
+        try {
+            $totalExpenses = 0;
+            $conditions = [
+                ['user_id', $userId],
+                ['transaction_date', $date],
+                ['transaction_type', 'CASH_WITHRAWAL'],
+                ['is_expense', 1],
+            ];
+            $transaction = Transaction::where($conditions)
+                ->orderBy('id', 'desc')
+                ->get();
+
+            foreach($transaction as $t) {
+                $totalExpenses += $t['amt_released'];
+            }
+            
+            return response()->json(['res' => 
+                [
+                    'transactions' => $transaction,
+                    'total_expenses' => $totalExpenses,
+                ]
+            ], 200);
+        } catch (Exception $e) {
+            return response()->json(['err'=>$e], 500); 
         }
     }
 }

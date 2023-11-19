@@ -49,6 +49,14 @@ Route::middleware('auth')->group(function () {
         [TransactionsController::class, 'getTransactions'])->name('transactions.get');
     Route::post('/transaction/save', [TransactionsController::class, 'createTransaction'])
         ->name('transaction.save');
+    Route::get('/transaction/get/cash/currentbalance/{userId}/{date}', [TransactionsController::class, 'getCurrentBalance'])
+        ->name('transaction.get.currentbalance');
+    Route::get('/transaction/get/cash/startingbalance/{userId}/{date}', [TransactionsController::class, 'getStartingBalance'])
+        ->name('transaction.get.startingbalance');
+    Route::get('/transaction/get/total/sales/{userId}/{date}', [TransactionsController::class, 'getTotalSales'])
+        ->name('transaction.get.totalsales');
+    Route::get('/transaction/get/total/expenses/{userId}/{date}', [TransactionsController::class, 'getTotalExpenses'])
+        ->name('transaction.get.expenses');
 
     Route::get('/branches', [TopnavController::class, 'getBranches'])
         ->name('branch.get');

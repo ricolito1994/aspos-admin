@@ -37,6 +37,8 @@ class Transaction extends Model
         'vat',
         'amt_released',
         'ref_transaction_id',
+        'remaining_balance',
+        'is_expense',
     ];
 
     protected $dates = ['deleted_at'];
@@ -64,5 +66,10 @@ class Transaction extends Model
     public function customer () 
     {
         return $this->belongsTo('App\Models\Customer', 'customer_id', 'id');
+    }
+
+    public function createdBy () 
+    {
+        return $this->belongsTo('App\Models\User', 'user_id', 'id');
     }
 }

@@ -9,7 +9,18 @@ import {
 } 
 from 'vue';
 
+import {
+    alertBox,
+    customerModal,
+    ALERT_TYPE
+} from '@/Services/Alert'
+
+import { saveTransaction, getCurrentBalance } from '@/Services/ServerRequests';
+import { randomString } from '@/Services/CodeGenerator';
+import { CASH_TRANSACTIONS } from '@/Constants'
 import TransactionModalLayout from '@/Layouts/TransactionModalLayout.vue'
+import TextAutoComplete from './TextAutoComplete.vue';
+import moment from 'moment';
 
 const props = defineProps({
     transaction : {
@@ -25,6 +36,13 @@ const props = defineProps({
 
 let transactionDetails = reactive (props.transaction.id ? props.transaction.item_details : []);
 
+
+const userObject = ref(JSON.parse(localStorage.getItem('user')));
+
+const companyObject = ref(JSON.parse(localStorage.getItem('company')));
+
+const isUpdate = ref(false);
+
 const emit = defineEmits(['closeTransactionModal', 'onAddTransaction'])
 
 const closeTModal = () => {
@@ -35,11 +53,124 @@ const addTransaction = (arg) => {
     emit('closeTransactionModal', arg);
 }
 
+const errs = ref([]);
+
 const title = ref (props.type.title);
 
-const save = () => {
+const currentDate = ref(moment().format('YYYY-MM-DD'));
 
+const currentCashBalance = ref(0);
+
+const tempCashBal = ref(0);
+
+const amountRequested = ref(0);
+
+const requestType = ref(CASH_TRANSACTIONS.REQUESTS[0].value)
+
+const createdBy = computed (() => props.transaction.user ? props.transaction.user.name : userObject.value.name);
+
+const changeTransactionRequest = () => {
+    props.transaction.transaction_type = requestType.value;
+    computeTotals()
 }
+
+
+const save = async () => {
+    
+    if (currentCashBalance.value < 0) {
+        alertBox("Current balance is less than 0.",ALERT_TYPE.ERR);
+        return;
+    }
+
+    if (amountRequested.value <= 0 || isNaN(parseFloat(amountRequested.value))) {
+        alertBox("Please enter a valid amount.",ALERT_TYPE.ERR);
+        return;
+    }
+
+    if (props.transaction.is_expense && requestType.value == 'CASH_DEPOSIT') {
+        alertBox("Uncheck expense if cash deposit.",ALERT_TYPE.ERR);
+        return;
+    }
+
+    try {
+        isUpdate.value = !isUpdate.value;
+        props.transaction['remaining_balance'] = currentCashBalance.value;
+        let transaction = await saveTransaction({
+            transaction: props.transaction,
+            transactionDetails: transactionDetails,
+            isCreate :  true,
+        });
+        transaction.data.res['isUpdate'] = isUpdate.value;
+        props.transaction = transaction.data.res;
+
+        alertBox('Transaction success!', ALERT_TYPE.MSG);
+        emit('onAddTransaction', transaction.data.res);        
+    } catch (e) {
+        alertBox(e.response.data.err ? e.response.data.err : e.response.data.message, 
+            ALERT_TYPE.ERR);
+    }
+}
+
+
+const computeTotals = () => {
+    let cashbal = tempCashBal.value;
+    let amtreq = isNaN(parseFloat(amountRequested.value)) ? 0 : 
+        parseFloat(amountRequested.value);
+    if (requestType.value == 'CASH_DEPOSIT') {
+        currentCashBalance.value = amtreq + cashbal;
+        props.transaction['amt_released'] = 0;
+        props.transaction['final_amt_received'] = amountRequested.value;
+    } else {
+        currentCashBalance.value = cashbal - amtreq;
+        props.transaction['final_amt_received'] = 0;
+        props.transaction['amt_released'] = amountRequested.value;
+    }
+}
+
+
+
+onMounted (async () => {
+    props.transaction['item_transaction_type'] = '-';
+    if (!props.transaction.id) {
+        transactionDetails[0] = {
+            'transaction_type' : requestType.value,
+            'item_transaction_type' : '-',
+            'unit': '-',
+            'units' : [],
+            'quantity' : 0,
+            'price_per_unit' : 0.0,
+            'cost_per_unit' : 0.0,
+            'total_cost' : 0.0,
+            'total_price' : 0.0,
+            'remaining_balance' : 0,
+            'product_id' : 0,
+            'unit_id' : 0,
+            'branch_id' : props.branchObject.id,
+            'company_id' : companyObject.value.id,
+            'supplier' : 0,
+            'stock' : 0,
+        };
+        props.transaction.transaction_code = randomString(15)
+        props.transaction.transaction_type = requestType.value;
+        let latestTransaction = await getCurrentBalance(
+            userObject.value.id,
+            currentDate.value);
+        let cb = latestTransaction.data.res ? latestTransaction.data.res.remaining_balance : 0;
+        currentCashBalance.value = cb;
+        tempCashBal.value = cb;
+    } else {
+        isUpdate.value = !isUpdate.value;
+        //transactionDetails[0] = requestType.value;
+        requestType.value = props.transaction['transaction_type'];
+        currentCashBalance.value = props.transaction['remaining_balance'];
+        amountRequested.value = requestType.value == 'CASH_DEPOSIT' ? props.transaction['final_amt_received'] 
+            : props.transaction['amt_released'];
+        console.log(requestType.value, props.transaction)
+    }
+})
+
+onUnmounted(() => {
+})
 
 </script>
 <template>
@@ -51,8 +182,64 @@ const save = () => {
         @onAddTransaction=addTransaction
         @onSave=save
     >
-        wew
+        <template #transaction="{ branchObject, userObject }">
+            <div style="width:100%; height:15%;" >
+                <div style="width:33.33%;float:left; ">
+                    <B>REQUESTED BY</B>
+                    <input type="text" style="width:95%;"/>
+                </div>
+                <div style="width:33.33%;float:left; ">
+                    <B>DATE</B>
+                    <input type="date" v-model="currentDate" style="width:95%;"/>
+                </div>
+                <div style="width:33.33%;float:left; ">
+                    <B>REQUEST TYPE</B>
+                    <select 
+                        style="width:95%;" 
+                        @change="changeTransactionRequest" 
+                        v-model="requestType"
+                    >
+                        <option 
+                            v-for="(T, index) in CASH_TRANSACTIONS.REQUESTS" 
+                            :key="index"
+                            :value="T.value"
+                        >
+                            {{T.label}}
+                        </option>
+                    </select>
+                </div>
+                <div style="clear:both"></div>
+            </div>
+            <div style="width:100%; height:15%;" >
+                <div style="width:33.33%;float:left; ">
+                    <B>AMOUNT REQUESTED</B>
+                    <input type="text"  v-model="amountRequested" @keyup="computeTotals" style="width:95%;"/>
+                </div>
+                <div style="width:33.33%;float:left; ">
+                    <B>CURRENT CASH BALANCE</B>
+                    <input disabled type="text" v-model="currentCashBalance" style="width:95%;"/>
+                </div>
+                <div style="width:33.33%;float:left; ">
+                    <br> 
+                    <input type="checkbox" v-model="transaction.is_expense"  id="is_expense" :checked="transaction.is_expense==1"/> &nbsp;
+                    <label style="cursor: pointer;" :for="`is_expense`" >
+                        <b>Expense</b>
+                    </label>&nbsp;
+                </div>
+            </div>
+            <div style="width:100%;" >
+                <div style="width:33.33%;float:left; ">
+                    <B>NOTES</B>
+                    <textarea v-model="transaction.transaction_desc" style="width:95%; resize:none" rows="16"/>
+                </div>
+                <div style="width:33.33%;float:left; ">
+                    <B>CREATED BY</B>
+                    <input disabled type="text" v-model="createdBy" style="width:95%;"/>
+                </div>
+            </div>
+        </template>
     </TransactionModalLayout>
 </template>
 <style scoped>
 </style>
+

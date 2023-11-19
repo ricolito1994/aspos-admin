@@ -169,6 +169,58 @@ export function saveTransaction (transaction) {
 }
 
 
+export function getCurrentBalance ( userId, date ) {
+    let productsRequest = axios.get(`${host}/transaction/get/cash/currentbalance/${userId}/${date}`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+
+export function getStartingBalance ( userId, date ) {
+    let productsRequest = axios.get(`${host}/transaction/get/cash/startingbalance/${userId}/${date}`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+
+export function getTotalSales ( userId, date ) {
+    let productsRequest = axios.get(`${host}/transaction/get/total/sales/${userId}/${date}`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+
+export function getTotalExpenses ( userId, date ) {
+    let productsRequest = axios.get(`${host}/transaction/get/total/expenses/${userId}/${date}`);
+    return new Promise ((resolve, reject) => {
+        productsRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+
 export function getCustomers ( company_id , searchString , customerType ) {
     searchString = searchString ? searchString : false;
     let productsRequest = axios.get(`${host}/customers/get/${company_id}/${customerType}/${searchString}`);

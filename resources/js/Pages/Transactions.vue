@@ -1,5 +1,12 @@
 <script setup>
-import { getTransaction, getTransactions } from '@/Services/ServerRequests';
+import { 
+    getTransaction, 
+    getTransactions,
+    getStartingBalance,
+    getCurrentBalance,
+    getTotalSales,
+    getTotalExpenses,
+} from '@/Services/ServerRequests';
 import { 
     usePage, 
     Head, 
@@ -49,6 +56,10 @@ const transactionDateTo = ref(nextMonth);
 
 const startingCash = ref(parseFloat(0.0));
 const currentCash = ref(parseFloat(0.0));
+const totalSales = ref(parseFloat(0.0));
+const totalCost = ref(parseFloat(0.0));
+const totalPrice = ref(parseFloat(0.0));
+const totalExpenses = ref(parseFloat(0.0));
 
 const isShowTransactionModal = ref(false);
 const isShowRefundModal = ref(false);
@@ -84,6 +95,7 @@ const tempTransaction = {
     amt_released : null,
     change : 0.00,
     ref_transaction_id: null,
+    is_expense: null,
 }
 
 const transaction = ref(tempTransaction);
@@ -111,11 +123,30 @@ const loadTransactions = async () => {
         transactionDateTo.value,
     );
     resultData.value = transaction.data.res;
+    loadBalances();
 }
 
 const catchChangeBranch = (branch) => {
     branchObject.value = branch;
     loadTransactions();
+}
+
+const loadBalances = async () => {
+    let balances = await Promise.all([
+        getStartingBalance (userObject.value.id, transactionDateFrom.value),
+        getCurrentBalance (userObject.value.id, transactionDateFrom.value),
+        getTotalSales (userObject.value.id, transactionDateFrom.value),
+        getTotalExpenses (userObject.value.id, transactionDateFrom.value),
+    ]);
+   
+    startingCash.value = balances[0].data.res ? balances[0].data.res.remaining_balance : 0;
+    currentCash.value = balances[1].data.res ? balances[1].data.res.remaining_balance : 0;
+
+    totalSales.value = balances[2].data.res ? balances[2].data.res.total_sale : 0;
+    totalPrice.value = balances[2].data.res ? balances[2].data.res.total_price : 0;
+    totalCost.value = balances[2].data.res ? balances[2].data.res.total_cost : 0;
+
+    totalExpenses.value = balances[3].data.res ? balances[3].data.res.total_expenses : 0;
 }
 
 const onAddTransaction = (transaction) => {
@@ -127,6 +158,7 @@ const onAddTransaction = (transaction) => {
         if (indx > -1)
             resultData.value[indx] = transaction;
     }
+    loadBalances();
 }
 
 const searchTransactions = async ( reset ) => {
@@ -144,6 +176,7 @@ const searchTransactions = async ( reset ) => {
         transactionDateFrom.value
     );
     resultData.value = transactions.data.res;
+    loadBalances();
 }
 
 const showTransactionModal = async (transactionArgument) => {
@@ -175,7 +208,8 @@ const showTransactionModal = async (transactionArgument) => {
                 showDepositCashModal ();
                 break;
             case TRANSACTION_MODAL_CONSTANTS.WITHRAW.value:
-                showWithrawCashModal ();
+                //showWithrawCashModal ();
+                showDepositCashModal ();
                 break;
         }
         return;
@@ -226,10 +260,10 @@ const options = ref([
         label : `Refund Items`,
         func : () => showRefundModal()
     },
-    {
+    /* {
         label : `Return Items`,
         func : () => showReturnModal()
-    },
+    }, 
     {
         label : `Start of Shift`,
         func : () => showStartOfShiftModal()
@@ -237,14 +271,20 @@ const options = ref([
     {
         label : `End of Shift`,
         func : () => showEndOfShiftModal()
-    },
+    },*/
     {
-        label : `Deposit Cash Onhand`,
+        label : `Cash Transactions`,
         func : () => showDepositCashModal()
     },
-    {
+    /* {
         label : `Withraw Cash Onhand`,
         func : () => showWithrawCashModal()
+    }, */
+    {
+        label : `Generate today's report`,
+        func : () => {
+
+        }
     },
 ]);
 
@@ -263,6 +303,20 @@ const tableHeaders = ref([
         field : 'transaction_type',
         fxn : (res) => {
             return res['transaction_type'];
+        }
+    },
+    {
+        name : 'AMOUNT RELEASED',
+        field : 'amt_released',
+        fxn : (res) => {
+            return res['amt_released'];
+        }
+    },
+    {
+        name : 'AMOUNT RECEIVED',
+        field : 'final_amt_received',
+        fxn : (res) => {
+            return res['final_amt_received'];
         }
     },
     /* {
@@ -379,7 +433,7 @@ const tableHeaders = ref([
             <DepositCashModal 
                 :transaction="transaction" 
                 :branchObject="branchObject"
-                :type=TRANSACTION_MODAL_CONSTANTS.DEPOSIT
+                :type=TRANSACTION_MODAL_CONSTANTS.CASH_TRANSACTION
                 @closeTransactionModal=showDepositCashModal
                 @onAddTransaction=onAddTransaction 
             />
@@ -444,11 +498,23 @@ const tableHeaders = ref([
         <div style="width:100%;height:85%;">
             <DataTable @viewItemDetails=showTransactionModal :tableHeaders="tableHeaders" :resultData="resultData" />
         </div>
-        
         <div style="width:100%;height:15%;">
-            <div><B>{{ transactionDateFrom }}</B></div>
-            <div><B>STARTING CASH : {{ startingCash }}</B></div>
-            <div><B>CURRENT CASH : {{ currentCash }}</B></div>
+            <div style="width:25%;float:left;border-right:1px solid rgb(240, 83, 64);">
+                <div><B>{{ transactionDateFrom }}</B></div>
+                <div><B>STARTING CASH : {{ startingCash }}</B></div>
+                <div><B>CURRENT CASH : {{ currentCash }}</B></div>
+            </div>
+            <div style="width:25%;float:left;padding-left:2%;border-right:1px solid rgb(240, 83, 64);">
+                <div><B>TOTAL COST : {{ totalCost }}</B></div>
+                <div><B>TOTAL PRICE : {{ totalPrice }}</B></div>
+                <div><B>TOTAL SALE : {{ totalSales }}</B></div>
+            </div>
+            <div style="width:25%;float:left;padding-left:2%;border-right:1px solid rgb(240, 83, 64);">
+                <div><B>EXPENSES</B></div>
+                <div><B>TOTAL : {{ totalExpenses }}</B></div>
+                <div><B>NET SALES : {{ totalSales - totalExpenses }}</B></div>
+            </div>
+            <div style="clear:both"></div>
         </div>
     </AppLayout>
 </template>

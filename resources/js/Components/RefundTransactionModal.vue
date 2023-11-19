@@ -14,6 +14,7 @@ import {
     getCustomers ,
     getTransactions,
     searchTransaction,
+    getCurrentBalance,
 } from '@/Services/ServerRequests';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextAutoComplete from './TextAutoComplete.vue';
@@ -56,6 +57,8 @@ const props = defineProps({
     }
 });
 
+const currentCashBalance = ref(0);
+
 const custName = ref("");
 
 const errors = ref([]);
@@ -67,6 +70,9 @@ const defaultStock = ref(null);
 const transactionDetails = ref ([]);
 
 let transactionObject = reactive(props.transaction);
+
+const createdBy = ref (transactionObject.createdBy);
+
 
 const emit = defineEmits(['closeTransactionModal', 'onAddTransaction'])
 
@@ -98,6 +104,14 @@ const save = async () => {
 
     if (confirm) {
         try {
+            if (defaultStock.value == 1) {
+                if (transactionObject.amt_released) {
+                    transactionObject['remaining_balance'] -= currentCashBalance.value; 
+                }
+            } else {
+                transactionObject['remaining_balance'] += currentCashBalance.value; 
+            }
+
             transactionObject.transaction_type = props.type.value;
             transactionObject.transaction_date = currentDate.value;
             
@@ -196,7 +210,7 @@ const onSelectTransaction = (selectedTransaction) => {
         let latestRemainingBalance = selectedTransaction.item_details[i]['latest_rem_bal_qty'] ? selectedTransaction.item_details[i]['latest_rem_bal_qty'] :
             sel.remaining_balance;
         let selUnits = typeof sel['unit'] !== 'string' ? sel['unit']  : sel.pp.unit;
-        let selectedUnit = selUnits.find(x => x.id == sel.unit_id) ;
+        let selectedUnit = selUnits.find(x => x.heirarchy == sel.unit_id) ;
         selectedTransaction.item_details[i]['units'] = selUnits;
         selectedTransaction.item_details[i]['unit'] = selectedUnit.unit_name;
         selectedTransaction.item_details[i]['old_qty'] = 
@@ -244,7 +258,7 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         newPrice = Math.abs(newPrice - transPrice);
         newCost = Math.abs(newCost - transCost);
     
-    let selectedUnitIndex = transactionObject.item_details[transactionIndex].units.findIndex(x => x.id == transactionObject.item_details[transactionIndex].unit_id)
+    let selectedUnitIndex = transactionObject.item_details[transactionIndex].units.findIndex(x => x.heirarchy == transactionObject.item_details[transactionIndex].unit_id)
     
     let convertedQuantity = convertQuantity(
         selProduct.unit,
@@ -292,8 +306,13 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         alertBox(errors.value, ALERT_TYPE.ERR)
     }
 
-    transactionObject[defaultStock.value == 0 ? 'amt_received' : 'amt_released']
-        = totalAmountRefund.value;
+    
+    /* transactionObject[defaultStock.value == 0 ? 'amt_received' : 'amt_released']
+        = totalAmountRefund.value; */
+
+    if (transactionObject['amt_released'] && defaultStock.value == 1)
+        transactionObject['amt_released']  = totalAmountRefund.value;
+    else transactionObject['amt_received']  = totalAmountRefund.value;
 
     if (defaultStock.value == 0) {
         transactionObject['final_amt_released'] = totalAmountRefund.value;
@@ -313,8 +332,8 @@ const calculateTotals = (excludeIndex) => {
     }
 }
 
-onMounted (() => {
-    console.log(props.transaction)
+onMounted (async () => {
+    //console.log(props.transaction)
     transactionDetails.value = props.transaction.id ? 
         props.transaction.item_details : [];
 
@@ -323,6 +342,13 @@ onMounted (() => {
 
     transactionObject.transaction_type = props.type.value;
 
+    let latestTransaction = await getCurrentBalance(
+        userObject.value.id,
+        transactionObject.transaction_date,
+    );
+    let cb = latestTransaction.data.res ? latestTransaction.data.res.remaining_balance : 0;
+    currentCashBalance.value = cb;
+    transactionObject['remaining_balance'] = currentCashBalance.value;
     if (transactionObject.id) {
         currentDate.value = transactionObject.transaction_date;
         isUpdate.value = true;
@@ -494,7 +520,8 @@ onUnmounted(() => {
                 <div style="width:33.33%;float:left;">
                     <div>
                         <B>USER</B>
-                        <input disabled v-model="userObject.name" type="text" style="width:95%;"/>
+                        <input v-if="createdBy" disabled v-model="createdBy.name" type="text" style="width:95%;"/>
+                        <input v-else disabled v-model="userObject.name" type="text" style="width:95%;"/>
                     </div>
                     <div style="margin-top:2%;">
                         <B>BRANCH</B>

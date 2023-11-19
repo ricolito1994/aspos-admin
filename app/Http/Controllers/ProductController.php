@@ -135,7 +135,7 @@ class ProductController extends Controller
 
                 if (count($p['transactions']) > 0) {
                     $unit = Unit::where([
-                        ['id', $p['transactions'][0]['unit_id']],
+                        ['heirarchy', $p['transactions'][0]['unit_id']],
                         ['branch_id', $user->selected_branch],
                     ])->first();
                     $unitRemainingBal = $unit->unit_name;

@@ -16,12 +16,16 @@ export const TRANSACTION_MODAL_CONSTANTS = {
         title: 'END OF SHIFT'
     },
     DEPOSIT: {
-        value:'DEPOSIT_CASH_TRANSACTION', 
+        value:'CASH_DEPOSIT', 
         title: 'DEPOSIT CASH'
     },
     WITHRAW: {
-        value:'WITHRAW_CASH_TRANSACTION', 
+        value:'CASH_WITHRAWAL', 
         title: 'WITHRAW CASH'
+    },
+    CASH_TRANSACTION: {
+        value:'CASH_TRANSACTION', 
+        title: 'CASH TRANSACTIONS'
     },
     ITEM_TRANSACTION : {
         value: 'ITEM_TRANSACTION',
@@ -34,6 +38,19 @@ export const TRANSACTION_MODAL_CONSTANTS = {
             },
         }
     }
+}
+
+export const CASH_TRANSACTIONS = {
+    REQUESTS : [
+        {
+            label : 'CASH DEPOSIT',
+            value : 'CASH_DEPOSIT'
+        },
+        {
+            label : 'CASH WITHRAWAL',
+            value : 'CASH_WITHRAWAL'
+        },
+    ]
 }
 
 export const DISCOUNT_LIST = [

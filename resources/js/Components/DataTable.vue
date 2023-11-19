@@ -56,10 +56,10 @@ let selectedPage = ref(1);
                             <span v-if="thead.name !== 'ACTIONS' && !thead.fxn">
                                 {{ res[thead.field] }}
                             </span>
-                            <span v-if="thead.name !== 'ACTIONS' && thead.fxn">
+                            <span v-else-if="thead.fxn">
                                 {{ thead.fxn(res) }}
                             </span>
-                            <span v-if="thead.name == 'ACTIONS'">
+                            <span v-else>
                                 <PrimaryButton 
                                     v-for="(action, index1) in thead.actions" 
                                     :key="index1" 

@@ -11,7 +11,8 @@ import {
     getProducts1, 
     getProduct, 
     saveTransaction, 
-    getCustomers 
+    getCustomers,
+    getCurrentBalance
 } from '@/Services/ServerRequests';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextAutoComplete from './TextAutoComplete.vue';
@@ -67,6 +68,10 @@ const customerNamePlacer = ref ("");
 
 const productsError = ref([]);
 
+const currentCashBalance = ref (parseFloat(0));
+
+const createdBy = ref (transactionObject.createdBy ? transactionObject.createdBy : userObject);
+
 const amount_payable = computed(()=>{
     if (transactionObject.item_transaction_type == 'DELIVERY') {
         return 0;
@@ -102,7 +107,7 @@ const randomString = (length, chars) => {
 }
 
 const changeUnit = (i) => {
-    let indexUnit = transactionDetails[i].units.findIndex(x => x.id === transactionDetails[i].unit_id);
+    let indexUnit = transactionDetails[i].units.findIndex(x => x.heirarchy === transactionDetails[i].unit_id);
     transactionDetails[i].unit = transactionDetails[i].units[indexUnit].unit_name;
     transactionDetails[i].price_per_unit = transactionDetails[i].units[indexUnit].price_per_unit;
     transactionDetails[i].cost_per_unit = transactionDetails[i].units[indexUnit].cost_per_unit;
@@ -138,7 +143,7 @@ const onSelectProduct = async (params) => {
 
     transactionDetails[params.index].units = prod.pricelist[0].unit;
     transactionDetails[params.index].unit = prod.pricelist[0].unit[0].unit_name;
-    transactionDetails[params.index].unit_id = prod.pricelist[0].unit[0].id;
+    transactionDetails[params.index].unit_id = prod.pricelist[0].unit[0].heirarchy;
 
     transactionDetails[params.index].price_per_unit = prod.pricelist[0].unit[0].price_per_unit;
     transactionDetails[params.index].cost_per_unit = prod.pricelist[0].unit[0].cost_per_unit;
@@ -177,7 +182,7 @@ const convertQuantities = (i) => {
 
     let selectedProductUnits = p.q.pricelist[0].unit;
 
-    let selUnit = selectedProductUnits.find(x => x.id === transactionDetails[i].unit_id)
+    let selUnit = selectedProductUnits.find(x => x.heirarchy === transactionDetails[i].unit_id)
 
     let j = p.p.unit_obj.heirarchy - 1;
     let cdn = selUnit.heirarchy >= p.p.unit_obj.heirarchy;
@@ -293,6 +298,16 @@ const save = async ( ) => {
         return;
     }
     try {
+
+        if (transactionObject.item_transaction_type == 'DELIVERY') {
+            if (transactionObject.amt_released) {
+                transactionObject['remaining_balance'] -= parseFloat(transactionObject.amt_released); 
+            }
+        } else {
+            transactionObject['remaining_balance'] += parseFloat(transactionObject.final_amt_received); 
+        }
+        //console.log(transactionObject)
+        //return;
         let transaction = await saveTransaction({
             transaction: transactionObject,
             transactionDetails: transactionDetails,
@@ -378,10 +393,17 @@ watch(
     }
 );
 
-onMounted(()=>{
+onMounted(async ()=>{
     // onmounted hook
-    // console.log('transactionObject', props.transaction)
+    console.log('transactionObject', props.transaction)
     // transactionDetails = props.transaction.item_details;
+    let latestTransaction = await getCurrentBalance(
+        userObject.value.id,
+        transactionObject.transaction_date,
+    );
+    let cb = latestTransaction.data.res ? latestTransaction.data.res.remaining_balance : 0;
+    currentCashBalance.value = cb;
+    transactionObject['remaining_balance'] = currentCashBalance.value;
     isVAT.value = transactionObject.vat !== null;
     isCOD.value = transactionObject.amt_released !== null && transactionObject.item_transaction_type == 'DELIVERY';
     title.value = props.transaction.id ? props.transaction.transaction_code : 'NEW TRANSACTION';
@@ -502,12 +524,21 @@ onUnmounted(()=>{
                         />
                     </div>
                     <div style="float:left; width:13%; padding:1%;"> 
-                        <select @change="changeUnit(transactionDetailIndex)" v-model="transactionDetail.unit_id" type="text" style="width:99%;">
-                            <option v-if='transactionDetail.units' v-for="(unit, uIndex) in transactionDetail.units" :key="uIndex" :value="unit.id">
+                        <select @change="changeUnit(transactionDetailIndex)" v-model="transactionDetail.unit_id" style="width:99%;">
+                            <option 
+                                v-if='transactionDetail.units' 
+                                v-for="(unit, uIndex) in transactionDetail.units" 
+                                :key="uIndex" 
+                                :value="unit.heirarchy"
+                            >
                                 {{ unit.unit_name }}
                             </option>
-
-                            <option v-if='transactionDetail.pp' v-for="(unit, uIndex) in transactionDetail.pp.unit" :key="uIndex" :value="unit.id">
+                            <option  
+                                v-if='transactionDetail.pp' 
+                                v-for="(unit, uIndex) in transactionDetail.pp.unit" 
+                                :key="uIndex" 
+                                :value="unit.heirarchy"
+                            >
                                 {{ unit.unit_name }}
                             </option>
                         </select>
@@ -590,8 +621,8 @@ onUnmounted(()=>{
             </div>
             <div style="width:33.33%;float:left;">
                 <div>
-                    <B>USER</B>
-                    <input disabled v-model="userObject.name" type="text" style="width:95%;"/>
+                    <B>USER</B> 
+                    <input disabled v-model="createdBy.name" type="text" style="width:95%;"/>
                 </div>
                 <div style="margin-top:2%;">
                     <B>BRANCH</B>
