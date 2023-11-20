@@ -15,6 +15,9 @@ class Branch extends Model
 
     protected $primary_key = 'id';
 
+    public $keyType = "string";
+
+
     protected $fillable = [
         'branch_name',
         'branch_address',
