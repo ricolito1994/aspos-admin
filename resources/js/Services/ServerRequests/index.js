@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const host = import.meta.env.VITE_APP_BASE_URL;
-
+//const host = import.meta.env.VITE_APP_BASE_URL;
+const host = '';
 let loading = false;
 
 let activeRequests = 0;
