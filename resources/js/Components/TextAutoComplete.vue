@@ -27,9 +27,13 @@ const props = defineProps({
     },
     addNew : {
         type: Function,
+    },
+    disabled: {
+        type: Boolean,
     }
 })
 
+const searchItmNameTmp = props.itmName;
 
 const currentIndex = ref(-1);
 
@@ -125,6 +129,9 @@ onMounted(() => {
     event.on('TextAutoCompleteComponent:clearSearchText', (modelName) => {
         if (props.itemName == modelName) searchString.value = "";
     });
+    event.on('TextAutoCompleteComponent:reset', (modelName) => {
+        if (props.itemName == modelName) searchString.value = searchItmNameTmp;
+    });
 })
 
 onUnmounted(() => {
@@ -134,8 +141,14 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div @keydown="navResultList" tabindex="0" style="width:100%;">
-        <input type="text" v-model="searchString" @keyup="searchItems" :style="style ? style : 'width:100%;'"/>
+    <div @keydown="navResultList" style="width:100%;z-index:9999">
+        <input 
+            type="text" 
+            v-model="searchString" 
+            @keyup="searchItems" 
+            :style="style ? style : 'width:100%;'"
+            :disabled="disabled"
+        />
         <div id="result-pane" class="scrollbar" v-if="showResults" ref="dropdownResultsRef">
             <div v-if="isLoading">
                 <span>Loading ...</span>
@@ -174,6 +187,7 @@ onUnmounted(() => {
     width:50%;
     max-height: 300px;
     overflow-y: auto;
+    z-index: 9999;
 }
 
 #result-pane .results {

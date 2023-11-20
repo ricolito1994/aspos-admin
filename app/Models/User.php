@@ -33,6 +33,12 @@ class User extends Authenticatable
         'designation',
         'phone',
         'branch_id',
+        'is_active',
+        'created_by',
+        'inactive_date',
+        'company_id',
+        'is_owner',
+        'selected_branch',
     ];
     /**
      * The attributes that should be hidden for serialization.
@@ -52,6 +58,8 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'last_login_at' => 'datetime',
         'password' => 'hashed',
+        'is_active' => 'boolean',
+        'is_owner' => 'boolean',
     ];
 
     protected $dates = ['deleted_at'];

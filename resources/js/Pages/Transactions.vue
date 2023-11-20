@@ -6,6 +6,7 @@ import {
     getCurrentBalance,
     getTotalSales,
     getTotalExpenses,
+    getUsers,
 } from '@/Services/ServerRequests';
 import { 
     usePage, 
@@ -30,11 +31,21 @@ import StartOfShiftModal from '@/Components/StartOfShiftModal.vue';
 import EndOfShiftModal from '@/Components/EndOfShiftModal.vue';
 import RefundTransactionModal from '@/Components/RefundTransactionModal.vue';
 import ReturnItemsModal from '@/Components/ReturnItemsModal.vue';
+import TextAutoComplete from '@/Components/TextAutoComplete.vue';
 import {
     TRANSACTION_MODAL_CONSTANTS,
     IS_VAT,
     VAT_PERCENT,
+    ALPHA_NUMERIC,
+    USER_ROLES,
 } from '@/Constants'
+import {
+    alertBox,
+    userModal,
+    ALERT_TYPE
+} from '@/Services/Alert'
+import { randomString } from '@/Services/CodeGenerator';
+import {event} from '@/Services/EventBus';
 import moment from 'moment';
 
 const props = defineProps({
@@ -69,9 +80,11 @@ const isShowEndOfShiftModal = ref(false);
 const isShowDepositCashModal = ref(false);
 const isShowWithrawCashModal = ref(false);
 
+const tmpUserObject = JSON.parse(localStorage.getItem('user'));
 const userObject = ref(JSON.parse(localStorage.getItem('user')));
 const companyObject = ref(JSON.parse(localStorage.getItem('company')));
 const branchObject = ref(JSON.parse(localStorage.getItem('selected_branch')));
+const searchUser = ref(userObject);
 
 const tempTransaction = {
     transaction_code : '',
@@ -96,6 +109,7 @@ const tempTransaction = {
     change : 0.00,
     ref_transaction_id: null,
     is_expense: null,
+    requested_by: null,
 }
 
 const transaction = ref(tempTransaction);
@@ -103,6 +117,40 @@ const transaction = ref(tempTransaction);
 const dropDownMenuButton = ref(null);
 
 const displayDropdown = ref(false);
+
+const openUserModal = () => {
+    let rand = randomString(15, ALPHA_NUMERIC);
+    userModal({
+        'name' : `${companyObject.value.company_code} employee`,
+        'username' : rand,
+        'company_id' : companyObject.value.id,
+        'branch_id' : branchObject.value.id,
+        'email': `${companyObject.value.company_code}_employee@${companyObject.value.company_code}.com`,
+        'password' : rand,
+        'phone' : '123',
+        'selected_branch': branchObject.value.id,
+        'designation' : USER_ROLES[3].id,
+        'is_active' : true,
+        'created_by' : tmpUserObject.id,    
+        'is_owner' : false,
+    })
+}
+
+const searchUsers = (index, searchString) => {
+    return new Promise ( async (resolve, reject) => {
+        try {
+            let users = await getUsers (searchString);
+            resolve (users)
+        } catch (e) {
+            reject (e);
+        }
+    })
+}
+
+const onSelectUser = (user) => {
+    searchUser.value = user.item;
+    loadTransactions();
+}
 
 onMounted ( () => {
     loadTransactions();
@@ -121,6 +169,7 @@ const loadTransactions = async () => {
         searchString.value,
         transactionDateFrom.value,
         transactionDateTo.value,
+        searchUser.value.id,
     );
     resultData.value = transaction.data.res;
     loadBalances();
@@ -133,10 +182,10 @@ const catchChangeBranch = (branch) => {
 
 const loadBalances = async () => {
     let balances = await Promise.all([
-        getStartingBalance (userObject.value.id, transactionDateFrom.value),
-        getCurrentBalance (userObject.value.id, transactionDateFrom.value),
-        getTotalSales (userObject.value.id, transactionDateFrom.value),
-        getTotalExpenses (userObject.value.id, transactionDateFrom.value),
+        getStartingBalance (transactionDateFrom.value, searchUser.value.id),
+        getCurrentBalance (transactionDateFrom.value, searchUser.value.id),
+        getTotalSales (transactionDateFrom.value, searchUser.value.id),
+        getTotalExpenses (transactionDateFrom.value, searchUser.value.id),
     ]);
    
     startingCash.value = balances[0].data.res ? balances[0].data.res.remaining_balance : 0;
@@ -166,14 +215,17 @@ const searchTransactions = async ( reset ) => {
         searchString.value = "";
         transactionDateFrom.value = currentDate;
         transactionDateTo.value = nextMonth;
+        searchUser.value = tmpUserObject;
+        event.emit('TextAutoCompleteComponent:reset', "name");
     }
-
+    
     let transactions = await getTransactions(
         companyObject.value.id, 
         branchObject.value.id,
         searchString.value, 
         transactionDateFrom.value, 
-        transactionDateFrom.value
+        transactionDateFrom.value,
+        searchUser.value.id,
     );
     resultData.value = transactions.data.res;
     loadBalances();
@@ -281,9 +333,9 @@ const options = ref([
         func : () => showWithrawCashModal()
     }, */
     {
-        label : `Generate today's report`,
+        label : `Reset Search`,
         func : () => {
-
+            searchTransactions(true)
         }
     },
 ]);
@@ -461,23 +513,37 @@ const tableHeaders = ref([
             <div style="width:6%; float:left;padding-top:0.5%">
                 <b>SEARCH</b>
             </div>
-            <div style="width:30%; float:left;">
+            <div style="width:15%; float:left;">
                 <input placeholder="Transaction Code" v-model="searchString" @change="searchTransactions" type="text" style="width:100%;margin-left:1%;"/>
             </div>
-            <div style="width:4%; float:left;padding-top:0.5%;padding-left:1%;">
+            <div style="width:6%; float:left;padding-top:0.5%;padding-left:2%;">
+                <b>USER</b>
+            </div>
+            <div style="width:30%; float:left;">
+                <TextAutoComplete 
+                    :itmName="searchUser.name ? searchUser.name : ''" 
+                    :getData="searchUsers" 
+                    :itemName="'name'" 
+                    :itemIndex="0"
+                    :style="'width:95%'"
+                    :addNew=openUserModal
+                    :disabled="tmpUserObject.designation != 1"
+                    @onSelectItem="onSelectUser"
+                />
+            </div>
+            <div style="width:4%; float:left;padding-top:0.5%;padding-left:0%;">
                 <b>Date</b>
             </div>
-            <div style="width:20%; float:left;">
+            <div style="width:10%; float:left;">
                 <input v-model="transactionDateFrom" @change="searchTransactions" type="date" style="width:100%;margin-left:1%;"/>
             </div>
-            
-            <div style="width:36%; padding-left:1%; float:left;">
+            <div style="width:10%; padding-left:1%; float:left;">
                 <span ref="dropDownMenuButton">
                     <PrimaryButton 
-                        :additionalStyles="'padding:2%;'" 
+                        :additionalStyles="'padding:8%;'" 
                         @click="toggleDisplayDropdown"
                     >
-                        + NEW TRANSACTION
+                        + ACTIONS
                     </PrimaryButton>&nbsp;
                 </span>
                 <Dropdown 
@@ -486,12 +552,12 @@ const tableHeaders = ref([
                     :onCloseDropDown="onCloseDropDown" 
                     v-if="displayDropdown"
                 />
-                <PrimaryButton 
+                <!--<PrimaryButton 
                     :additionalStyles="'padding:2%;background:#c9b500;'" 
                     @click="searchTransactions(true)"
                 >
                     - RESET SEARCH
-                </PrimaryButton>
+                </PrimaryButton>-->
             </div>
         </div>
         

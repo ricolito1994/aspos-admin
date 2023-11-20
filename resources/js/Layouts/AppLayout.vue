@@ -4,6 +4,7 @@ import SideNav from "@/Components/SideNav.vue";
 import LoadingComponent from "@/Components/LoadingComponent.vue";
 import AlertBox from "@/Components/AlertBox.vue";
 import CustomerModal from "@/Components/CustomerModal.vue";
+import UserModal from "@/Components/UserModal.vue";
 defineProps({
     catchChangeBranch : {
         type: Function,
@@ -14,6 +15,7 @@ defineProps({
 <template>
     <AlertBox />
     <CustomerModal />
+    <UserModal />
     <LoadingComponent />
     <div id="body-container">
         <TopNav @catchChangeBranch="catchChangeBranch"></TopNav>

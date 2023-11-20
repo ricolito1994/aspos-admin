@@ -8,6 +8,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TransactionsController;
 use App\Http\Controllers\TopnavController;
+use App\Http\Controllers\UserController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -41,21 +42,21 @@ Route::middleware('auth')->group(function () {
     
     Route::get('/transactions', [TransactionsController::class, 'index'])
         ->name('transactions');
-    Route::get('/transaction/get/{transactionId}', [TransactionsController::class, 'getTransaction'])
+    Route::get('/transaction/get/{transactionId}/{userId?}', [TransactionsController::class, 'getTransaction'])
         ->name('transaction.get');
-    Route::get('/transaction/search/{searchString}/{companyId}/{branchId}', [TransactionsController::class, 'searchTransaction'])
+    Route::get('/transaction/search/{searchString}/{companyId}/{branchId}/{userId?}', [TransactionsController::class, 'searchTransaction'])
         ->name('transaction.search');
-    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom}/{transTo}', 
+    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom}/{transTo}/{userId?}', 
         [TransactionsController::class, 'getTransactions'])->name('transactions.get');
     Route::post('/transaction/save', [TransactionsController::class, 'createTransaction'])
         ->name('transaction.save');
-    Route::get('/transaction/get/cash/currentbalance/{userId}/{date}', [TransactionsController::class, 'getCurrentBalance'])
+    Route::get('/transaction/get/cash/currentbalance/{date}/{userId?}', [TransactionsController::class, 'getCurrentBalance'])
         ->name('transaction.get.currentbalance');
-    Route::get('/transaction/get/cash/startingbalance/{userId}/{date}', [TransactionsController::class, 'getStartingBalance'])
+    Route::get('/transaction/get/cash/startingbalance/{date}/{userId?}', [TransactionsController::class, 'getStartingBalance'])
         ->name('transaction.get.startingbalance');
-    Route::get('/transaction/get/total/sales/{userId}/{date}', [TransactionsController::class, 'getTotalSales'])
+    Route::get('/transaction/get/total/sales/{date}/{userId?}', [TransactionsController::class, 'getTotalSales'])
         ->name('transaction.get.totalsales');
-    Route::get('/transaction/get/total/expenses/{userId}/{date}', [TransactionsController::class, 'getTotalExpenses'])
+    Route::get('/transaction/get/total/expenses/{date}/{userId?}', [TransactionsController::class, 'getTotalExpenses'])
         ->name('transaction.get.expenses');
 
     Route::get('/branches', [TopnavController::class, 'getBranches'])
@@ -67,6 +68,15 @@ Route::middleware('auth')->group(function () {
         ->name('customers.get');
     Route::post('/customers/save', [CustomerController::class, 'save'])
         ->name('customers.create');
+
+    Route::get('/user', [SettingsController::class, 'index'])
+        ->name('user');
+    Route::post('/user/save', [UserController::class, 'save'])
+        ->name('user.save');
+    Route::get('/users/get/{search?}', [UserController::class, 'getUsers'])
+        ->name('users.get');
+    Route::get('/user/get/{userId}', [UserController::class, 'getUser'])
+        ->name('user.get');
 });
 
 

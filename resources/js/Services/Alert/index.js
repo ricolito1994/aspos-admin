@@ -42,3 +42,7 @@ export const alertBox = (message, alertType) => {
 export const customerModal = (customer) => {
     event.emit('CustomerModal:open', customer);
 }
+
+export const userModal = (user) => {
+    event.emit('UserModal:open', user);
+}

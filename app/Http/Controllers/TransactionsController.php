@@ -20,9 +20,9 @@ use Illuminate\Support\Facades\Validator;
 
 class TransactionsController extends Controller
 {
-    // inject dependencies, unit converter service maybe
+
     public function __construct()
-    {
+    { 
     }
 
     public function index () 
@@ -101,9 +101,9 @@ class TransactionsController extends Controller
         $branchId, 
         $searchString, 
         $transDateFrom, 
-        $transDateTo
-        ) 
-    {
+        $transDateTo,
+        $userId = null,
+    ) {
         // get many transactions
         try {
             $conds =  [
@@ -111,6 +111,9 @@ class TransactionsController extends Controller
                 ['branch_id', $branchId],
                 ['transaction_code', 'LIKE', "%$searchString%"]
             ];
+
+            if ($userId) 
+                $conds[] = ['user_id', $userId];
                 
             if($searchString == "false") unset($conds[2]);
                
@@ -118,6 +121,7 @@ class TransactionsController extends Controller
                     ->whereBetween('transaction_date', [$transDateFrom, $transDateTo])
                     ->with('customer')
                     ->with('createdBy')
+                    ->with('requestedBy')
                     ->orderBy('id', 'ASC')
                     ->get();
             
@@ -133,22 +137,28 @@ class TransactionsController extends Controller
         $searchString = false,
         $companyId = 1, 
         $branchId = 1, 
+        $userId = null,
     ) 
     {
         // get many transactions
         try {
+           
             
             $conds =  [
                 ['company_id', $companyId],
                 ['branch_id', $branchId],
                 ['transaction_code', 'LIKE', "%$searchString%"]
             ];
+
+            if ($userId) 
+                $conds[] = ['user_id', $userId];
                 
             if($searchString == "false") unset($conds[2]);
                
             $transactions = Transaction::where ($conds)
                 ->with('customer')
                 ->with('createdBy')
+                ->with('requestedBy')
                 ->with('itemDetails', function ($q) {
                     $q->with('unit');
                     $q->with('product', function ($q){
@@ -184,14 +194,24 @@ class TransactionsController extends Controller
         }
     }
 
-    public function getTransaction ($transactionId) 
-    {
+    public function getTransaction (
+        $transactionId, 
+        $userId = null
+    ) {
         // get single transaction
         try {
-            $transaction = Transaction::where('id', $transactionId)
+            $conds = [
+                ['id', $transactionId]
+            ];
+
+            if ($userId) 
+                $conds[] = ['user_id', $userId];
+
+            $transaction = Transaction::where($conds)
                 ->with('itemDetails')
                 ->with('customer')
                 ->with('createdBy')
+                ->with('requestedBy')
                 ->with('refTransaction', function ($q) {
                     $q->with('itemDetails');
                 })
@@ -213,12 +233,23 @@ class TransactionsController extends Controller
         }
     }
 
-    public function getStartingBalance($userId, $date) {
+    public function getStartingBalance(
+        $date, 
+        $userId = null
+    ) {
         try {
+
+            $user = User::where('id', Auth::id())->first();
+
             $conditions = [
-                ['user_id', $userId],
                 ['transaction_date', $date],
+                ['branch_id' , $user->selected_branch],
+                ['company_id', $user->company_id],
             ];
+
+            if ($userId) 
+                $conditions[] = ['user_id', $userId];
+
             $transaction = Transaction::where($conditions)
                 ->orderBy('id', 'asc')
                 ->first();
@@ -229,12 +260,22 @@ class TransactionsController extends Controller
         }
     }
 
-    public function getCurrentBalance($userId, $date) {
+    public function getCurrentBalance(
+        $date, 
+        $userId = null
+    ) {
         try {
+            $user = User::where('id', Auth::id())->first();
+
             $conditions = [
-                ['user_id', $userId],
                 ['transaction_date', $date],
+                ['branch_id' , $user->selected_branch],
+                ['company_id', $user->company_id],
             ];
+
+            if ($userId) 
+                $conditions[] = ['user_id', $userId];
+            
             $transaction = Transaction::where($conditions)
                 ->whereNotNull('remaining_balance')
                 ->orderBy('id', 'desc')
@@ -246,17 +287,26 @@ class TransactionsController extends Controller
     }
 
 
-    public function getTotalSales($userId, $date) {
+    public function getTotalSales(
+        $date, 
+        $userId = null
+    ) {
         try {
+            $user = User::where('id', Auth::id())->first();
             $totalPrice = 0;
             $totalCost = 0;
             $totalSale = 0;
             $conditions = [
-                ['user_id', $userId],
                 ['transaction_date', $date],
                 ['transaction_type', 'ITEM_TRANSACTION'],
-                ['item_transaction_type', 'SALE']
+                ['item_transaction_type', 'SALE'],
+                ['branch_id' , $user->selected_branch],
+                ['company_id', $user->company_id],
             ];
+
+            if ($userId) 
+                $conditions[] = ['user_id', $userId];
+
             $transaction = Transaction::where($conditions)
                 ->orderBy('id', 'desc')
                 ->get();
@@ -280,15 +330,24 @@ class TransactionsController extends Controller
         }
     }
 
-    public function getTotalExpenses($userId, $date) {
+    public function getTotalExpenses(
+        $date, 
+        $userId = null
+    ) {
         try {
+            $user = User::where('id', Auth::id())->first();
             $totalExpenses = 0;
             $conditions = [
-                ['user_id', $userId],
                 ['transaction_date', $date],
                 ['transaction_type', 'CASH_WITHRAWAL'],
                 ['is_expense', 1],
+                ['branch_id' , $user->selected_branch],
+                ['company_id', $user->company_id],
             ];
+
+            if ($userId) 
+                $conditions[] = ['user_id', $userId];
+
             $transaction = Transaction::where($conditions)
                 ->orderBy('id', 'desc')
                 ->get();

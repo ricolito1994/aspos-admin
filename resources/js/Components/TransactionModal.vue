@@ -395,11 +395,11 @@ watch(
 
 onMounted(async ()=>{
     // onmounted hook
-    console.log('transactionObject', props.transaction)
+    // console.log('transactionObject', props.transaction)
     // transactionDetails = props.transaction.item_details;
     let latestTransaction = await getCurrentBalance(
-        userObject.value.id,
         transactionObject.transaction_date,
+        userObject.value.id,
     );
     let cb = latestTransaction.data.res ? latestTransaction.data.res.remaining_balance : 0;
     currentCashBalance.value = cb;

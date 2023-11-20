@@ -53,6 +53,26 @@ export const CASH_TRANSACTIONS = {
     ]
 }
 
+export const USER_ROLES = [
+    {
+        name : 'PRODUCT_OWNER',
+        id : 1,
+    },
+    {
+        name : 'BRANCH_MANAGER',
+        id : 2,
+    },
+    {
+        name : 'CASHIER',
+        id : 3,
+    },
+    {
+        name : 'EMPLOYEE',
+        id : 4,
+    },
+]
+
+
 export const DISCOUNT_LIST = [
     {
         text: 'None',
@@ -84,3 +104,4 @@ export const CUSTOMER_TYPES = [
 
 export const IS_VAT = false;
 export const VAT_PERCENT = 0.12;
+export const ALPHA_NUMERIC = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";

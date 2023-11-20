@@ -6,18 +6,24 @@ import {
     reactive, 
     watch, 
     computed 
-} 
-from 'vue';
-
+} from 'vue';
 import {
     alertBox,
     customerModal,
+    userModal,
     ALERT_TYPE
 } from '@/Services/Alert'
-
-import { saveTransaction, getCurrentBalance } from '@/Services/ServerRequests';
+import { 
+    saveTransaction, 
+    getCurrentBalance,
+    getUsers,
+} from '@/Services/ServerRequests';
 import { randomString } from '@/Services/CodeGenerator';
-import { CASH_TRANSACTIONS } from '@/Constants'
+import { 
+    CASH_TRANSACTIONS, 
+    USER_ROLES, 
+    ALPHA_NUMERIC 
+} from '@/Constants'
 import TransactionModalLayout from '@/Layouts/TransactionModalLayout.vue'
 import TextAutoComplete from './TextAutoComplete.vue';
 import moment from 'moment';
@@ -78,17 +84,17 @@ const changeTransactionRequest = () => {
 const save = async () => {
     
     if (currentCashBalance.value < 0) {
-        alertBox("Current balance is less than 0.",ALERT_TYPE.ERR);
+        alertBox("Current balance is less than 0.", ALERT_TYPE.ERR);
         return;
     }
 
     if (amountRequested.value <= 0 || isNaN(parseFloat(amountRequested.value))) {
-        alertBox("Please enter a valid amount.",ALERT_TYPE.ERR);
+        alertBox("Please enter a valid amount.", ALERT_TYPE.ERR);
         return;
     }
 
     if (props.transaction.is_expense && requestType.value == 'CASH_DEPOSIT') {
-        alertBox("Uncheck expense if cash deposit.",ALERT_TYPE.ERR);
+        alertBox("Uncheck expense if cash deposit.", ALERT_TYPE.ERR);
         return;
     }
 
@@ -127,10 +133,43 @@ const computeTotals = () => {
     }
 }
 
+const searchUsers = (index, searchString) => {
+    return new Promise ( async (resolve, reject) => {
+        try {
+            let users = await getUsers (searchString);
+            resolve (users)
+        } catch (e) {
+            reject (e);
+        }
+    })
+}
+
+const onSelectRequestedBy = (user) => {
+    props.transaction.requested_by = user.item.id;
+}
+
+const openNewUser = () => {
+    let rand = randomString(15, ALPHA_NUMERIC);
+    userModal({
+        'name' : `${companyObject.value.company_code} employee`,
+        'username' : rand,
+        'company_id' : companyObject.value.id,
+        'branch_id' : props.branchObject.id,
+        'email': `${companyObject.value.company_code}_employee@${companyObject.value.company_code}.com`,
+        'password' : rand,
+        'phone' : '123',
+        'selected_branch': props.branchObject.id,
+        'designation' : USER_ROLES[3].id,
+        'is_active' : true,
+        'created_by' : userObject.value.id,    
+        'is_owner' : false,
+    })
+}
 
 
 onMounted (async () => {
     props.transaction['item_transaction_type'] = '-';
+    console.log(props.transaction)
     if (!props.transaction.id) {
         transactionDetails[0] = {
             'transaction_type' : requestType.value,
@@ -153,8 +192,8 @@ onMounted (async () => {
         props.transaction.transaction_code = randomString(15)
         props.transaction.transaction_type = requestType.value;
         let latestTransaction = await getCurrentBalance(
-            userObject.value.id,
-            currentDate.value);
+            currentDate.value,
+            userObject.value.id); console.log(userObject.value.id)
         let cb = latestTransaction.data.res ? latestTransaction.data.res.remaining_balance : 0;
         currentCashBalance.value = cb;
         tempCashBal.value = cb;
@@ -165,7 +204,6 @@ onMounted (async () => {
         currentCashBalance.value = props.transaction['remaining_balance'];
         amountRequested.value = requestType.value == 'CASH_DEPOSIT' ? props.transaction['final_amt_received'] 
             : props.transaction['amt_released'];
-        console.log(requestType.value, props.transaction)
     }
 })
 
@@ -186,7 +224,15 @@ onUnmounted(() => {
             <div style="width:100%; height:15%;" >
                 <div style="width:33.33%;float:left; ">
                     <B>REQUESTED BY</B>
-                    <input type="text" style="width:95%;"/>
+                    <TextAutoComplete 
+                        :itmName="transaction.requested_by ? transaction.requested_by.name : ''" 
+                        :getData="searchUsers" 
+                        :itemName="'name'" 
+                        :itemIndex="0"
+                        :style="'width:95%'"
+                        :addNew=openNewUser
+                        @onSelectItem="onSelectRequestedBy"
+                    />
                 </div>
                 <div style="width:33.33%;float:left; ">
                     <B>DATE</B>
@@ -219,9 +265,9 @@ onUnmounted(() => {
                     <B>CURRENT CASH BALANCE</B>
                     <input disabled type="text" v-model="currentCashBalance" style="width:95%;"/>
                 </div>
-                <div style="width:33.33%;float:left; ">
+                <div v-if="requestType=='CASH_WITHRAWAL'" style="width:33.33%;float:left; ">
                     <br> 
-                    <input type="checkbox" v-model="transaction.is_expense"  id="is_expense" :checked="transaction.is_expense==1"/> &nbsp;
+                    <input type="checkbox" v-model="transaction.is_expense"  id="is_expense" /> &nbsp;
                     <label style="cursor: pointer;" :for="`is_expense`" >
                         <b>Expense</b>
                     </label>&nbsp;

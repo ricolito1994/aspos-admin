@@ -118,8 +118,11 @@ export function getProduct ( product_id ) {
 }
 
 
-export function getTransaction (transactionId) {
-    let productsRequest = axiosLoading.get(`${host}/transaction/get/${transactionId}`);
+export function getTransaction (transactionId, userId) {
+    let urlStr = userId ? `${host}/transaction/get/${transactionId}/${userId}` :
+        `${host}/transaction/get/${transactionId}`;
+
+    let productsRequest = axiosLoading.get(urlStr);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -131,9 +134,19 @@ export function getTransaction (transactionId) {
 }
 
 
-export function getTransactions (company_id, branch_id, searchString, transFrom, transTo) {
+export function getTransactions (
+    company_id, 
+    branch_id, 
+    searchString, 
+    transFrom, 
+    transTo,
+    userId,
+) {
     searchString = searchString ? searchString : false;
-    let productsRequest = axiosLoading.get(`${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}`);
+    let urlStr = userId ? `${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}/${userId}` :
+        `${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}`;
+
+    let productsRequest = axiosLoading.get(urlStr);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -144,8 +157,17 @@ export function getTransactions (company_id, branch_id, searchString, transFrom,
     })
 }
 
-export function searchTransaction (searchString, company_id, branch_id) {
-    let productsRequest = axios.get(`${host}/transaction/search/${searchString}/${company_id}/${branch_id}/`);
+export function searchTransaction (
+    searchString, 
+    company_id,
+    branch_id,
+    userId,
+) {
+
+    let urlStr = userId ? `${host}/transaction/search/${searchString}/${company_id}/${branch_id}/${userId}`
+        :`${host}/transaction/search/${searchString}/${company_id}/${branch_id}/`;
+
+    let productsRequest = axios.get(urlStr);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -169,8 +191,12 @@ export function saveTransaction (transaction) {
 }
 
 
-export function getCurrentBalance ( userId, date ) {
-    let productsRequest = axios.get(`${host}/transaction/get/cash/currentbalance/${userId}/${date}`);
+export function getCurrentBalance ( date, userId ) {
+
+    let urlStr = userId ? `${host}/transaction/get/cash/currentbalance/${date}/${userId}`
+        :`${host}/transaction/get/cash/currentbalance/${date}`;
+
+    let productsRequest = axios.get(urlStr);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -182,8 +208,12 @@ export function getCurrentBalance ( userId, date ) {
 }
 
 
-export function getStartingBalance ( userId, date ) {
-    let productsRequest = axios.get(`${host}/transaction/get/cash/startingbalance/${userId}/${date}`);
+export function getStartingBalance ( date, userId ) {
+
+    let urlStr = userId ? `${host}/transaction/get/cash/startingbalance/${date}/${userId}`
+        :`${host}/transaction/get/cash/startingbalance/${date}`;
+
+    let productsRequest = axios.get(urlStr);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -195,8 +225,12 @@ export function getStartingBalance ( userId, date ) {
 }
 
 
-export function getTotalSales ( userId, date ) {
-    let productsRequest = axios.get(`${host}/transaction/get/total/sales/${userId}/${date}`);
+export function getTotalSales ( date, userId ) {
+
+    let urlStr = userId ? `${host}/transaction/get/total/sales/${date}/${userId}`
+        :`${host}/transaction/get/total/sales/${date}`;
+
+    let productsRequest = axios.get(urlStr);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -208,8 +242,12 @@ export function getTotalSales ( userId, date ) {
 }
 
 
-export function getTotalExpenses ( userId, date ) {
-    let productsRequest = axios.get(`${host}/transaction/get/total/expenses/${userId}/${date}`);
+export function getTotalExpenses ( date, userId ) {
+
+    let urlStr = userId ? `${host}/transaction/get/total/expenses/${date}/${userId}`
+        :`${host}/transaction/get/total/expenses/${date}`;
+
+    let productsRequest = axios.get(urlStr);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -238,6 +276,42 @@ export function saveCustomer (customer) {
     let customerSave = axiosLoading.post(`${host}/customers/save`, customer);
     return new Promise ((resolve, reject) => {
         customerSave.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+export function getUser (userId) {
+    let user = axios.get(`${host}/user/get/${userId}`);
+    return new Promise ((resolve, reject) => {
+        user.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+export function getUsers (searchString) {
+    let user = axios.get(`${host}/users/get/${searchString}`);
+    return new Promise ((resolve, reject) => {
+        user.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+export function saveUser (user) {
+    let userSave = axiosLoading.post(`${host}/user/save`, user);
+    return new Promise ((resolve, reject) => {
+        userSave.then(res => {
             resolve(res)
         })
         .catch(err=>{

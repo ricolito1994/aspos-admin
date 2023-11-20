@@ -39,9 +39,14 @@ class Transaction extends Model
         'ref_transaction_id',
         'remaining_balance',
         'is_expense',
+        'requested_by',
     ];
 
     protected $dates = ['deleted_at'];
+
+    protected $casts = [
+        'is_expense' => 'boolean',
+    ];
 
     public function branch () 
     {
@@ -71,5 +76,10 @@ class Transaction extends Model
     public function createdBy () 
     {
         return $this->belongsTo('App\Models\User', 'user_id', 'id');
+    }
+
+    public function requestedBy () 
+    {
+        return $this->belongsTo('App\Models\User', 'requested_by', 'id');
     }
 }
