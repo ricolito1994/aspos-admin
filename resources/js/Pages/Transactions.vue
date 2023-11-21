@@ -86,7 +86,7 @@ const companyObject = ref(JSON.parse(localStorage.getItem('company')));
 const branchObject = ref(JSON.parse(localStorage.getItem('selected_branch')));
 const searchUser = ref(userObject);
 
-const tempTransaction = {
+/* const tempTransaction = {
     transaction_code : '',
     item_transaction_type : 'DELIVERY',
     transaction_type: TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.value,
@@ -110,9 +110,9 @@ const tempTransaction = {
     ref_transaction_id: null,
     is_expense: null,
     requested_by: null,
-}
+} */
 
-const transaction = ref(tempTransaction);
+const transaction = ref({});
 
 const dropDownMenuButton = ref(null);
 
@@ -236,7 +236,31 @@ const showTransactionModal = async (transactionArgument) => {
         let transactionResult = await getTransaction (transactionArgument.id);
         transaction.value = transactionResult.data.res;
     } else {
-        transaction.value = tempTransaction;
+        transaction.value = {
+            transaction_code : '',
+            item_transaction_type : 'DELIVERY',
+            transaction_type: TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.value,
+            stock : true,
+            transaction_desc: 'a transaction',
+            transaction_date : currentDate,
+            total_price : parseFloat(0.0),
+            total_cost : parseFloat(0.0),
+            supplier_id : 0,
+            branch_id : branchObject.value.id,
+            user_id : userObject.value.id,
+            company_id : companyObject.value.id,
+            amt_received: 0.00,
+            final_amt_received: 0.00,
+            discount_type: 1,
+            discount_percent: 0,
+            vat: IS_VAT ? VAT_PERCENT : 0,
+            customer_id : null,
+            amt_released : null,
+            change : 0.00,
+            ref_transaction_id: null,
+            is_expense: null,
+            requested_by: null,
+        };
     }
 
     if (
@@ -271,32 +295,32 @@ const showTransactionModal = async (transactionArgument) => {
 
 const showRefundModal = () => {
     isShowRefundModal.value = !isShowRefundModal.value;   
-    if (!isShowRefundModal.value)  transaction.value = tempTransaction;
+    if (!isShowRefundModal.value)  transaction.value = {};
 }
 
 const showReturnModal = () => {
     isShowReturnModal.value = !isShowReturnModal.value;
-    if (!isShowReturnModal.value)  transaction.value = tempTransaction;
+    if (!isShowReturnModal.value)  transaction.value = {};
 }
 
 const showStartOfShiftModal = () => {
     isShowStartOfShiftModal.value = !isShowStartOfShiftModal.value;
-    if (!isShowStartOfShiftModal.value)  transaction.value = tempTransaction;
+    if (!isShowStartOfShiftModal.value)  transaction.value = {};
 }
 
 const showEndOfShiftModal = () => {
     isShowEndOfShiftModal.value = !isShowEndOfShiftModal.value;
-    if (!isShowEndOfShiftModal.value)  transaction.value = tempTransaction;
+    if (!isShowEndOfShiftModal.value)  transaction.value = {};
 }
 
 const showDepositCashModal = () => {
     isShowDepositCashModal.value = !isShowDepositCashModal.value;
-    if (!isShowDepositCashModal.value)  transaction.value = tempTransaction;
+    if (!isShowDepositCashModal.value)  transaction.value = {};
 }
 
 const showWithrawCashModal = () => {
     isShowWithrawCashModal.value = !isShowWithrawCashModal.value;
-    if (!isShowWithrawCashModal.value)  transaction.value = tempTransaction;
+    if (!isShowWithrawCashModal.value)  transaction.value = {};
 }
 
 const onCloseDropDown = ( ) => {
@@ -415,7 +439,6 @@ const tableHeaders = ref([
             <TransactionModal 
                 :transaction="transaction" 
                 :branchObject="branchObject" 
-                :defaultValues=tempTransaction
                 @closeTransactionModal="showTransactionModal"
                 @onAddTransaction=onAddTransaction 
             />

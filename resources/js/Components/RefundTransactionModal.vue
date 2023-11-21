@@ -106,10 +106,14 @@ const save = async () => {
         try {
             if (defaultStock.value == 1) {
                 if (transactionObject.amt_released) {
-                    transactionObject['remaining_balance'] -= currentCashBalance.value; 
+                    transactionObject['remaining_balance'] = 
+                        parseFloat(transactionObject['remaining_balance']) -
+                        parseFloat(currentCashBalance.value); 
                 }
             } else {
-                transactionObject['remaining_balance'] += currentCashBalance.value; 
+                transactionObject['remaining_balance'] = 
+                    parseFloat(transactionObject['remaining_balance']) +
+                    parseFloat(currentCashBalance.value); 
             }
 
             transactionObject.transaction_type = props.type.value;

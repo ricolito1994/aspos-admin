@@ -301,13 +301,16 @@ const save = async ( ) => {
 
         if (transactionObject.item_transaction_type == 'DELIVERY') {
             if (transactionObject.amt_released) {
-                transactionObject['remaining_balance'] -= parseFloat(transactionObject.amt_released); 
+                transactionObject['remaining_balance'] = 
+                    parseFloat(transactionObject['remaining_balance']) -
+                    parseFloat(transactionObject.amt_released); 
             }
         } else {
-            transactionObject['remaining_balance'] += parseFloat(transactionObject.final_amt_received); 
+            transactionObject['remaining_balance'] = 
+                parseFloat(transactionObject['remaining_balance']) +
+                parseFloat(transactionObject.final_amt_received); 
         }
-        //console.log(transactionObject)
-        //return;
+
         let transaction = await saveTransaction({
             transaction: transactionObject,
             transactionDetails: transactionDetails,
@@ -395,7 +398,7 @@ watch(
 
 onMounted(async ()=>{
     // onmounted hook
-    // console.log('transactionObject', props.transaction)
+    console.log('transactionObject', transactionObject)
     // transactionDetails = props.transaction.item_details;
     let latestTransaction = await getCurrentBalance(
         transactionObject.transaction_date,

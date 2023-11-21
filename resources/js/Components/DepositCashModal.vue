@@ -169,7 +169,6 @@ const openNewUser = () => {
 
 onMounted (async () => {
     props.transaction['item_transaction_type'] = '-';
-    console.log(props.transaction)
     if (!props.transaction.id) {
         transactionDetails[0] = {
             'transaction_type' : requestType.value,
@@ -193,7 +192,7 @@ onMounted (async () => {
         props.transaction.transaction_type = requestType.value;
         let latestTransaction = await getCurrentBalance(
             currentDate.value,
-            userObject.value.id); console.log(userObject.value.id)
+            userObject.value.id);
         let cb = latestTransaction.data.res ? latestTransaction.data.res.remaining_balance : 0;
         currentCashBalance.value = cb;
         tempCashBal.value = cb;
