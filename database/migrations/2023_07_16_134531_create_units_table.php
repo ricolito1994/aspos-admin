@@ -15,9 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('unit_name');
             $table->unsignedBigInteger('parent_quantity')->nullable();
-            $table->unsignedBigInteger('product_id')->nullable();
             $table->unsignedBigInteger('price_list_id');
-            $table->unsignedBigInteger('supplier_id')->nullable();
             $table->unsignedBigInteger('branch_id');
             $table->unsignedBigInteger('heirarchy');
             $table->boolean('is_default');
@@ -26,10 +24,10 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
-            $table->foreign('price_list_id')->references('id')->on('pricelist')->onDelete('cascade');
-            $table->foreign('supplier_id')->references('id')->on('suppliers')->onDelete('cascade');
-            $table->foreign('branch_id')->references('id')->on('branch')->onDelete('cascade');
+            $table->unsignedBigInteger('product_id')->references('id')->on('products')->onDelete('cascade')->nullable();
+            $table->unsignedBigInteger('price_list_id')->references('id')->on('pricelist')->onDelete('cascade');
+            $table->unsignedBigInteger('supplier_id')->references('id')->on('suppliers')->onDelete('cascade')->nullable();
+            $table->unsignedBigInteger('branch_id')->references('id')->on('branch')->onDelete('cascade');
         });
     }
 
