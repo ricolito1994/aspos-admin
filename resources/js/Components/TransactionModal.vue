@@ -311,6 +311,12 @@ const save = async ( ) => {
                 parseFloat(transactionObject.final_amt_received); 
         }
 
+        if (transactionObject['remaining_balance'] < 0) {
+            alertBox(`Remaining balance is negative: ${transactionObject['remaining_balance']}`
+                , ALERT_TYPE.ERR);
+            return;
+        }
+
         let transaction = await saveTransaction({
             transaction: transactionObject,
             transactionDetails: transactionDetails,

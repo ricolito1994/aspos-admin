@@ -116,6 +116,12 @@ const save = async () => {
                     parseFloat(currentCashBalance.value); 
             }
 
+            if (transactionObject['remaining_balance'] < 0) {
+                alertBox(`Remaining balance is negative: ${transactionObject['remaining_balance']}`
+                    , ALERT_TYPE.ERR);
+                return;
+            }
+
             transactionObject.transaction_type = props.type.value;
             transactionObject.transaction_date = currentDate.value;
             
