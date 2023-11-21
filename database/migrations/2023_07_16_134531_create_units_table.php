@@ -15,8 +15,6 @@ return new class extends Migration
             $table->id();
             $table->string('unit_name');
             $table->unsignedBigInteger('parent_quantity')->nullable();
-            $table->unsignedBigInteger('price_list_id');
-            $table->unsignedBigInteger('branch_id');
             $table->unsignedBigInteger('heirarchy');
             $table->boolean('is_default');
             $table->float('price_per_unit', 8, 2);
