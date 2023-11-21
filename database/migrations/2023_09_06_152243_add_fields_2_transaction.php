@@ -13,7 +13,10 @@ return new class extends Migration
     {
         //
         Schema::table('transactions', function(Blueprint $table) {
-            $table->unsignedBigInteger('customer_id')->nullable();
+            $table->unsignedBigInteger('customer_id')
+                ->references('id')
+                ->on('customer')
+                ->nullable();
         });
     }
 

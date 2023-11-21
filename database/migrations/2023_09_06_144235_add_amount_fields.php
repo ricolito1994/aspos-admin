@@ -14,12 +14,12 @@ return new class extends Migration
         //
         Schema::table('transactions', function(Blueprint $table) {
             $table->unsignedBigInteger('discount_type')->nullable();
-            $table->float('discount_percent', 8, 2)->nullable();
-            $table->float('vat', 8, 2)->nullable();
-            $table->float('final_amt_received', 8, 2)->nullable();
-            $table->float('amt_received', 8, 2)->nullable();
-            $table->float('amt_released', 8, 2)->nullable();
-            $table->float('change', 8, 2)->nullable();
+            $table->float('discount_percent', 12, 2)->nullable();
+            $table->float('vat', 12, 2)->nullable();
+            $table->float('final_amt_received', 12, 2)->nullable();
+            $table->float('amt_received', 12, 2)->nullable();
+            $table->float('amt_released', 12, 2)->nullable();
+            $table->float('change', 12, 2)->nullable();
         });
     }
 
