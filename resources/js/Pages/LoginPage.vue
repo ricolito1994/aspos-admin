@@ -47,10 +47,10 @@ const submitLogin = ( ) => {
                         Password<br>
                         <input v-model="form.password" @keyup.enter="submitLogin" type="password" />
                     </div>
-                    <div id="remember-me">
+                    <!--<div id="remember-me">
                         <br><input v-model="form.remember" id="remember-me-cb"  type="checkbox" />
                         <label for="remember-me-cb"> Remember Me</label>
-                    </div>
+                    </div>-->
                     <div id="auth-fail-msg" align="center" v-if="form.errors.email || form.errors.password">
                         Invalid Username or Password!
                     </div>
