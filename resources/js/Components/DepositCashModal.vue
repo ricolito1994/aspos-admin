@@ -169,6 +169,7 @@ const openNewUser = () => {
 
 onMounted (async () => {
     props.transaction['item_transaction_type'] = '-';
+   
     if (!props.transaction.id) {
         transactionDetails[0] = {
             'transaction_type' : requestType.value,

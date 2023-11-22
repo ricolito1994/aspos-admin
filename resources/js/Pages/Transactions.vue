@@ -215,8 +215,9 @@ const searchTransactions = async ( reset ) => {
         searchString.value = "";
         transactionDateFrom.value = currentDate;
         transactionDateTo.value = nextMonth;
-        searchUser.value = tmpUserObject;
-        event.emit('TextAutoCompleteComponent:reset', "name");
+        searchUser.value = tmpUserObject.designation == 1 ? tmpUserObject : {};
+        searchUser.value = {};
+        event.emit('TextAutoCompleteComponent:clearSearchText', "name");
     }
     
     let transactions = await getTransactions(
@@ -295,6 +296,33 @@ const showTransactionModal = async (transactionArgument) => {
 
 const showRefundModal = () => {
     isShowRefundModal.value = !isShowRefundModal.value;   
+    if (!transaction.value.id) {
+        transaction.value = {
+            transaction_code : '',
+            item_transaction_type : 'DELIVERY',
+            transaction_type: TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.value,
+            stock : true,
+            transaction_desc: 'a transaction',
+            transaction_date : currentDate,
+            total_price : parseFloat(0.0),
+            total_cost : parseFloat(0.0),
+            supplier_id : 0,
+            branch_id : branchObject.value.id,
+            user_id : userObject.value.id,
+            company_id : companyObject.value.id,
+            amt_received: 0.00,
+            final_amt_received: 0.00,
+            discount_type: 1,
+            discount_percent: 0,
+            vat: IS_VAT ? VAT_PERCENT : 0,
+            customer_id : null,
+            amt_released : null,
+            change : 0.00,
+            ref_transaction_id: null,
+            is_expense: null,
+            requested_by: null,
+        };
+    }
     if (!isShowRefundModal.value)  transaction.value = {};
 }
 
@@ -315,6 +343,33 @@ const showEndOfShiftModal = () => {
 
 const showDepositCashModal = () => {
     isShowDepositCashModal.value = !isShowDepositCashModal.value;
+    if (!transaction.value.id) {
+        transaction.value = {
+            transaction_code : '',
+            item_transaction_type : 'DELIVERY',
+            transaction_type: TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.value,
+            stock : true,
+            transaction_desc: 'a transaction',
+            transaction_date : currentDate,
+            total_price : parseFloat(0.0),
+            total_cost : parseFloat(0.0),
+            supplier_id : 0,
+            branch_id : branchObject.value.id,
+            user_id : userObject.value.id,
+            company_id : companyObject.value.id,
+            amt_received: 0.00,
+            final_amt_received: 0.00,
+            discount_type: 1,
+            discount_percent: 0,
+            vat: IS_VAT ? VAT_PERCENT : 0,
+            customer_id : null,
+            amt_released : null,
+            change : 0.00,
+            ref_transaction_id: null,
+            is_expense: null,
+            requested_by: null,
+        };
+    }
     if (!isShowDepositCashModal.value)  transaction.value = {};
 }
 

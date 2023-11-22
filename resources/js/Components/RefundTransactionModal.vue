@@ -93,7 +93,6 @@ const save = async () => {
 
     if (errors.value.length > 0) {
         alertBox(errors.value, ALERT_TYPE.ERR);
-        return;
     }
 
     let confirm = true;
@@ -126,7 +125,8 @@ const save = async () => {
             transactionObject.transaction_date = currentDate.value;
             
             isUpdate.value = !isUpdate.value;
-
+            console.log('transactionObject', transactionObject)
+            return;
             let transaction = await saveTransaction({
                 transaction: transactionObject,
                 transactionDetails: transactionDetails.value,
@@ -325,7 +325,7 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
     else transactionObject['amt_received']  = totalAmountRefund.value;
 
     if (defaultStock.value == 0) {
-        transactionObject['final_amt_released'] = totalAmountRefund.value;
+        transactionObject['final_amt_received'] = totalAmountRefund.value;
     }
 }
 
