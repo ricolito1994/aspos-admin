@@ -97,8 +97,20 @@ const tableHeaders = ref([
         field : 'product_name',
     },
     {
-        name : 'DESCRIPTION',
-        field : 'product_desc',
+        name : 'PRICE',
+        style: 'width:300px',
+        fxn : (res) => {
+            let prices = "";
+            console.log(res.pricelist)
+            let priceList = res.pricelist.find(x => x.is_default)
+            
+            for (let i in priceList.unit) {
+                let sel = priceList.unit[i];
+                prices += `${sel.price_per_unit}/${sel.unit_name}`;
+            }
+            
+            return prices;
+        }
     },
     {
         name : 'UNIT',

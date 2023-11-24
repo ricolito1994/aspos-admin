@@ -1,5 +1,15 @@
 <script setup>
-import { onMounted, onUnmounted, ref, reactive, watch } from 'vue';
+import { 
+    onMounted, 
+    onUnmounted, 
+    ref, 
+    reactive, 
+    watch 
+} from 'vue';
+import {
+    alertBox,
+    ALERT_TYPE
+} from '@/Services/Alert';
 import { saveProduct } from '@/Services/ServerRequests';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DataTable from '@/Components/DataTable.vue';
@@ -115,7 +125,10 @@ const randomString = (length, chars) => {
 }
 
 const save = async () => {
-    //console.log('product ',product)
+    if (userObject.value.designation != 1) {
+        alertBox ("Denied saving product.", ALERT_TYPE.ERR)
+    }
+
     let newProduct = await saveProduct({
         product : product,
         prices : priceList,
@@ -123,6 +136,8 @@ const save = async () => {
     
     newProduct.data['isUpdate'] = isUpdate.value;
     isUpdate.value = false;
+
+    alertBox ("Success!", ALERT_TYPE.MSG)
 
     emit('onAddProduct', newProduct.data)
 }
@@ -133,6 +148,11 @@ const genarateProductCode = () => {
 }
 
 const prodMenuSelect = (index) => {
+    if (index == 2 && product.transactions.length == 0) {
+        alertBox ("No transactions present.", ALERT_TYPE.MSG);
+        return;
+    }
+    
     defaultProdMenu.value = index;
 }
 
@@ -285,10 +305,10 @@ watch (priceList, (oldval, newval) => {
                             PRICE LIST NAME
                             <input type="text" v-model="price.pricelist_name" style="width:100%"/>
                         </div>
-                        <div style="float:right; width:50%">
+                        <!--<div style="float:right; width:50%">
                             SUPPLIER
                             <input type="text" style="width:100%"/>
-                        </div>
+                        </div>-->
                         <div style="clear:both"></div>
                     </div>
                     <div style="width:100%;margin-top:40px">
@@ -321,7 +341,6 @@ watch (priceList, (oldval, newval) => {
                                     <td >
                                         <input disabled v-model="unit.is_default" type="checkbox" >
                                     </td>
-                                   
                                     <td>
                                         <input v-model="unit.heirarchy" disabled type="text" style="width:100px;">
                                     </td>

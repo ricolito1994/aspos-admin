@@ -89,6 +89,10 @@ class ProductController extends Controller
                 }
             }
 
+            $product['pricelist'] = Pricelist::where('product_id', $product->id)
+                ->with('unit')
+                ->get();
+
             $product['remaining_balance'] = 0;
             $product['unit'] = '-';
             DB::commit();
@@ -121,6 +125,7 @@ class ProductController extends Controller
                     //$query->max('id');
                 })
                 ->with('pricelist', function($query) use ($user) {
+                    $query->with('unit');
                     $query->where('is_default', 1);
                     $query->where('branch_id', $user->selected_branch);
                 });
