@@ -37,6 +37,9 @@ const showCustomerModal = (customerData) => {
 
 const saveCustomerData = async ( ) => {
     try {
+        customer.value.customer_name = customer.value.customer_name.toUpperCase();
+        customer.value.customer_code = customer.value.customer_code.toUpperCase();
+        customer.value.address = customer.value.address.toUpperCase();
         await saveCustomer(customer.value);
         showCustomerModal()
     } catch (e) {

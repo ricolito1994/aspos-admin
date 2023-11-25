@@ -44,6 +44,7 @@ const showUserModal = (userData) => {
 const saveUserData = async ( ) => {
     try {
         user.value['is_owner'] = user.designation == 1;
+        user.value.name = user.value.name.toUpperCase();
         await saveUser(user.value);
         showUserModal()
     } catch (e) {

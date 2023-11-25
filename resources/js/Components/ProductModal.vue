@@ -127,7 +127,10 @@ const randomString = (length, chars) => {
 const save = async () => {
     if (userObject.value.designation != 1) {
         alertBox ("Denied saving product.", ALERT_TYPE.ERR)
+        return;
     }
+
+    product.product_code = product.product_code.toUpperCase();
 
     let newProduct = await saveProduct({
         product : product,
@@ -247,7 +250,7 @@ watch (priceList, (oldval, newval) => {
                 </div>
                 <div style="width:50%;float:left;">
                     <B>PRODUCT CODE</B>
-                    <input disabled v-model="product.product_code" type="text" style="width:100%;"/>
+                    <input class="uppercase" disabled v-model="product.product_code" type="text" style="width:100%;"/>
                 </div>
                 <div style="clear:both"></div>
             </div>

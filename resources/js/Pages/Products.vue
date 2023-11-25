@@ -77,7 +77,10 @@ const onAddProduct = (product) => {
 const searchProducts = async ( reset ) => {
     if(typeof reset == "boolean") searchString.value = "";
 
-    let products = await getProducts(companyObject.value.id, searchString.value);
+    let products = await getProducts(
+        companyObject.value.id, 
+        searchString.value.toUpperCase(),
+    );
     resultData.value = products.data;
 }
 
@@ -101,7 +104,6 @@ const tableHeaders = ref([
         style: 'width:300px',
         fxn : (res) => {
             let prices = "";
-            console.log(res.pricelist)
             let priceList = res.pricelist.find(x => x.is_default)
             
             for (let i in priceList.unit) {
@@ -153,7 +155,7 @@ const tableHeaders = ref([
                 <b>SEARCH</b>
             </div>
             <div style="width:40%; float:left;">
-                <input placeholder="PRODUCT NAME / PRODUCT CODE" v-model="searchString" @change="searchProducts" type="text" style="width:100%;margin-left:1%;"/>
+                <input class="uppercase" placeholder="PRODUCT NAME / PRODUCT CODE" v-model="searchString" @change="searchProducts" type="text" style="width:100%;margin-left:1%;"/>
             </div>
             <div style="width:25%; padding-left:1%; float:left;">
                 <PrimaryButton :additionalStyles="'padding:3%;'" @click="showProductModal(true)">+ NEW PRODUCT</PrimaryButton>&nbsp;

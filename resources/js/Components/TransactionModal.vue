@@ -317,6 +317,8 @@ const save = async ( ) => {
             return;
         }
 
+        transactionObject.transaction_code = transactionObject.transaction_code.toUpperCase();
+
         let transaction = await saveTransaction({
             transaction: transactionObject,
             transactionDetails: transactionDetails,
@@ -461,7 +463,13 @@ onUnmounted(()=>{
             </div>
             <div style="width:33.33%;float:left; ">
                 <B>TRANSACTION CODE</B>
-                <input :disabled="isUpdate" type="text" v-model="transactionObject.transaction_code" style="width:90%;"/>
+                <input 
+                    class="uppercase"
+                    :disabled="isUpdate" 
+                    type="text" 
+                    v-model="transactionObject.transaction_code" 
+                    style="width:90%;"
+                />
             </div>
             <div style="width:33.33%;float:left;;">
                 <B>TRANSACTION TYPE</B>
