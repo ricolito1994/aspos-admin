@@ -404,10 +404,25 @@ watch(
     }
 );
 
+watch(
+    () => transactionObject.item_transaction_type,
+    (newVal)=>{
+        if(!transactionObject.id) {
+            let tcsplit = transactionObject.transaction_code.split('-');
+            transactionObject.transaction_code = `${newVal[0]}-${tcsplit[1]}-${tcsplit[2]}`;
+        }
+    }
+)
+
 onMounted(async ()=>{
     // onmounted hook
-    console.log('transactionObject', transactionObject)
+    //console.log('transactionObject', transactionObject)
     // transactionDetails = props.transaction.item_details;
+    if(!transactionObject.id) {
+        transactionObject.transaction_code = 
+        `${transactionObject.item_transaction_type[0]}-${companyObject.value.company_code}-${randomString(15, alphaNumeric.value)}`;
+    }
+
     let latestTransaction = await getCurrentBalance(
         transactionObject.transaction_date,
         userObject.value.id,

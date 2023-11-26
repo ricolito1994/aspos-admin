@@ -117,6 +117,8 @@ const navigateItems = (scroll) => {
 
     searchString.value = 
         results.value[currentIndex.value] ? results.value[currentIndex.value][props.itemName] : '';
+
+        searchString.value = searchString.value.toUpperCase();
     //var scrollAmount = dropdownResultsRef.value.clientHeight * scroll;
     const itemHeight = dropdownResultsRef.value.querySelector('.results').clientHeight;
     const scrollAmount = itemHeight * scroll;
@@ -143,7 +145,8 @@ onUnmounted(() => {
 <template>
     <div @keydown="navResultList" style="width:100%;z-index:9999">
         <input 
-            type="text" 
+            type="text"
+            class="uppercase"
             v-model="searchString" 
             @keyup="searchItems" 
             :style="style ? style : 'width:100%;'"
