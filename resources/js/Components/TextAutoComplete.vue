@@ -58,6 +58,7 @@ const searchItems = async (event) => {
         showResults.value = true;
     
     if(event.keyCode !== 38 &&  event.keyCode !== 40) {
+        searchString.value = searchString.value.toUpperCase();
         currentIndex.value = -1;
         let res = await props.getData(1, searchString.value)
         isLoading.value = false;

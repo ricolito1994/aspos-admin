@@ -599,7 +599,7 @@ const tableHeaders = ref([
             </div>
             <div style="width:30%; float:left;">
                 <TextAutoComplete 
-                    :itmName="searchUser.name ? searchUser.name : ''" 
+                    :itmName="searchUser ? searchUser.name : ''" 
                     :getData="searchUsers" 
                     :itemName="'name'" 
                     :itemIndex="0"
