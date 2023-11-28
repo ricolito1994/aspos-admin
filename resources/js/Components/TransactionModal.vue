@@ -125,7 +125,7 @@ const onSelectProduct = async (params) => {
         //alert (`${params.item.product_name} already exists.`);
         transactionDetails[indexSimilarProduct].quantity++;
         transactionDetails.splice(params.index, 1)
-        return;
+        //return;
     }
     transactionDetails[params.index]['product'] = {
         p: params.item, // from /products/get remaining balance only
@@ -148,8 +148,12 @@ const onSelectProduct = async (params) => {
     transactionDetails[params.index].price_per_unit = prod.pricelist[0].unit[0].price_per_unit;
     transactionDetails[params.index].cost_per_unit = prod.pricelist[0].unit[0].cost_per_unit;
 
-    transactionDetails[params.index].total_cost = prod.pricelist[0].unit[0].cost_per_unit * transactionDetails[params.index].quantity;
-    transactionDetails[params.index].total_price = prod.pricelist[0].unit[0].price_per_unit * transactionDetails[params.index].quantity;
+    transactionDetails[params.index].total_cost = 
+        parseFloat(prod.pricelist[0].unit[0].cost_per_unit) 
+        * parseFloat(transactionDetails[params.index].quantity);
+    transactionDetails[params.index].total_price = 
+        parseFloat(prod.pricelist[0].unit[0].price_per_unit) 
+        * parseFloat(transactionDetails[params.index].quantity);
 
     computeTotals();
     convertQuantities(params.index);
@@ -158,26 +162,26 @@ const onSelectProduct = async (params) => {
 const convertQuantities = (i) => {
     let p = transactionDetails[i].product;
     if (!p) return;
-    let remBal = p.p.remaining_balance;
+    let remBal = parseFloat(p.p.remaining_balance);
     if (p.p.remaining_balance == 0 && !transactionObject.stock) {
         let errmsg = `${p.p.product_name} remaining balance is negative`;
         if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
         transactionDetails[i].quantity = 0;
-        return;
+        //return;
     }
 
     if (transactionDetails[i].quantity <= 0) {
         let errmsg = `${p.p.product_name} quantity must be greater than 0`;
         if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
         transactionDetails[i].quantity = 0;
-        return;
+        //return;
     }
 
     if (p.q.pricelist == 0) {
         let errmsg = `${p.p.product_name} no pricelist found`;
         if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
         transactionDetails[i].quantity = 0;
-        return;
+        //return;
     }
 
     let selectedProductUnits = p.q.pricelist[0].unit;
@@ -217,13 +221,13 @@ const convertQuantities = (i) => {
     
     let remainingBalance = 
         !transactionObject.stock ? 
-        remBal - transactionDetails[i].quantity: // if stock out (ransactionObject.stock == false), deduct to remaining balance
-        remBal + transactionDetails[i].quantity; // if stock in (ransactionObject.stock == true), add to remaining balance
+        remBal - parseFloat(transactionDetails[i].quantity): // if stock out (ransactionObject.stock == false), deduct to remaining balance
+        remBal + parseFloat(transactionDetails[i].quantity); // if stock in (ransactionObject.stock == true), add to remaining balance
     
     if (remainingBalance >= 0) {
         let errmsg = `${p.p.product_name} remaining balance is negative`;
         let errIndx = productsError.value.find(x => x === errmsg);
-        transactionDetails[i].remaining_balance = remainingBalance;
+        transactionDetails[i].remaining_balance = parseFloat(remainingBalance);
         if (errIndx > -1) productsError.value.splice(errIndx, 1)
     } else {
         let errmsg = `${p.p.product_name} remaining balance is negative`;
