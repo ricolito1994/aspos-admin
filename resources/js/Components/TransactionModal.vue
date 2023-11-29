@@ -94,8 +94,10 @@ const closeModal = () => {
 }
 
 const changeQuantity = (i) => {
-    transactionDetails[i].total_cost = transactionDetails[i].price_per_unit * transactionDetails[i].quantity;
-    transactionDetails[i].total_price = transactionDetails[i].cost_per_unit * transactionDetails[i].quantity;
+    transactionDetails[i].total_cost = 
+        transactionDetails[i].cost_per_unit * transactionDetails[i].quantity;
+    transactionDetails[i].total_price = 
+        transactionDetails[i].price_per_unit * transactionDetails[i].quantity;
     computeTotals();
     convertQuantities(i);
 }
@@ -119,21 +121,22 @@ const onSelectProduct = async (params) => {
     var prod = await getProduct(params.item.id)
         prod = prod.data;
 
+    let indexItem = params.index;
     let indexSimilarProduct = transactionDetails.findIndex(x=>x.product_code == params.item.product_code);    
 
     if (indexSimilarProduct > -1) {
-        //alert (`${params.item.product_name} already exists.`);
         transactionDetails[indexSimilarProduct].quantity++;
+        indexItem = indexSimilarProduct;
         transactionDetails.splice(params.index, 1)
         //return;
     }
-    transactionDetails[params.index]['product'] = {
+    transactionDetails[indexItem]['product'] = {
         p: params.item, // from /products/get remaining balance only
         q: prod, // from /products/get/{id} with pricelist and unit
     };
 
-    transactionDetails[params.index]['product_code'] = prod.product_code
-    transactionDetails[params.index].product_id = prod.id;
+    transactionDetails[indexItem]['product_code'] = prod.product_code
+    transactionDetails[indexItem].product_id = prod.id;
 
     if(prod.pricelist.length == 0) {
         let errmsg = `${prod.product_name} no pricelist found.`;
@@ -141,22 +144,20 @@ const onSelectProduct = async (params) => {
         return;
     }
 
-    transactionDetails[params.index].units = prod.pricelist[0].unit;
-    transactionDetails[params.index].unit = prod.pricelist[0].unit[0].unit_name;
-    transactionDetails[params.index].unit_id = prod.pricelist[0].unit[0].heirarchy;
+    transactionDetails[indexItem].units = prod.pricelist[0].unit;
+    transactionDetails[indexItem].unit = prod.pricelist[0].unit[0].unit_name;
+    transactionDetails[indexItem].unit_id = prod.pricelist[0].unit[0].heirarchy;
 
-    transactionDetails[params.index].price_per_unit = prod.pricelist[0].unit[0].price_per_unit;
-    transactionDetails[params.index].cost_per_unit = prod.pricelist[0].unit[0].cost_per_unit;
+    transactionDetails[indexItem].price_per_unit = parseFloat(prod.pricelist[0].unit[0].price_per_unit);
+    transactionDetails[indexItem].cost_per_unit = parseFloat(prod.pricelist[0].unit[0].cost_per_unit);
 
-    transactionDetails[params.index].total_cost = 
-        parseFloat(prod.pricelist[0].unit[0].cost_per_unit) 
-        * parseFloat(transactionDetails[params.index].quantity);
-    transactionDetails[params.index].total_price = 
-        parseFloat(prod.pricelist[0].unit[0].price_per_unit) 
-        * parseFloat(transactionDetails[params.index].quantity);
-
+    transactionDetails[indexItem].total_cost = 
+        transactionDetails[indexItem].cost_per_unit * parseFloat(transactionDetails[indexItem].quantity);
+    transactionDetails[indexItem].total_price = 
+        transactionDetails[indexItem].price_per_unit * parseFloat(transactionDetails[indexItem].quantity);
+    
     computeTotals();
-    convertQuantities(params.index);
+    convertQuantities(indexItem);
 }
 
 const convertQuantities = (i) => {
@@ -167,21 +168,21 @@ const convertQuantities = (i) => {
         let errmsg = `${p.p.product_name} remaining balance is negative`;
         if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
         transactionDetails[i].quantity = 0;
-        //return;
+        return;
     }
 
     if (transactionDetails[i].quantity <= 0) {
         let errmsg = `${p.p.product_name} quantity must be greater than 0`;
         if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
         transactionDetails[i].quantity = 0;
-        //return;
+        return;
     }
 
     if (p.q.pricelist == 0) {
         let errmsg = `${p.p.product_name} no pricelist found`;
         if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
         transactionDetails[i].quantity = 0;
-        //return;
+        return;
     }
 
     let selectedProductUnits = p.q.pricelist[0].unit;
@@ -240,8 +241,8 @@ const computeTotals = (watchChangeVal) => {
     let total_cost = 0;
     let total_price = 0;
     for (let i in transactionDetails) {
-        total_cost += transactionDetails[i].total_price;
-        total_price += transactionDetails[i].total_cost;
+        total_cost += transactionDetails[i].total_cost;
+        total_price += transactionDetails[i].total_price;
         if(watchChangeVal) convertQuantities(i)
     }
     transactionObject.total_price = total_price;
@@ -586,10 +587,10 @@ onUnmounted(()=>{
                         <input disabled v-model="transactionDetail.cost_per_unit" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input disabled v-model="transactionDetail.total_cost" type="text" style="width:100%;"/>
+                        <input disabled v-model="transactionDetail.total_price" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
-                        <input disabled v-model="transactionDetail.total_price" type="text" style="width:100%;"/>
+                        <input disabled v-model="transactionDetail.total_cost" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
                         <input disabled v-model="transactionDetail.remaining_balance" type="text" style="width:100%;"/>
