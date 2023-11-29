@@ -164,25 +164,36 @@ const convertQuantities = (i) => {
     let p = transactionDetails[i].product;
     if (!p) return;
     let remBal = parseFloat(p.p.remaining_balance);
+    
+    let errmsg1 = `${p.p.product_name} remaining balance is negative`;
     if (p.p.remaining_balance == 0 && !transactionObject.stock) {
-        let errmsg = `${p.p.product_name} remaining balance is negative`;
-        if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
+        if (!productsError.value.find(x => x === errmsg1)) productsError.value.push(errmsg1);
         transactionDetails[i].quantity = 0;
         return;
+    } else {
+        let indx = productsError.value.findIndex(x => x === errmsg1);
+        if (indx >= 0) productsError.value.splice(indx, 1);
     }
 
+    
+    let errmsg = `${p.p.product_name} quantity must be greater than 0`;
     if (transactionDetails[i].quantity <= 0) {
-        let errmsg = `${p.p.product_name} quantity must be greater than 0`;
         if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
         transactionDetails[i].quantity = 0;
         return;
+    } else {
+        let indx = productsError.value.findIndex(x => x === errmsg);
+        if (indx >= 0) productsError.value.splice(indx, 1);
     }
 
+    let errmsg2 = `${p.p.product_name} no pricelist found`;
     if (p.q.pricelist == 0) {
-        let errmsg = `${p.p.product_name} no pricelist found`;
-        if (!productsError.value.find(x => x === errmsg)) productsError.value.push(errmsg);
+        if (!productsError.value.find(x => x === errmsg2)) productsError.value.push(errmsg2);
         transactionDetails[i].quantity = 0;
         return;
+    } else {
+        let indx = productsError.value.findIndex(x => x === errmsg2);
+        if (indx >= 0) productsError.value.splice(indx, 1);
     }
 
     let selectedProductUnits = p.q.pricelist[0].unit;
@@ -222,9 +233,15 @@ const convertQuantities = (i) => {
     
     let remainingBalance = 
         !transactionObject.stock ? 
-        remBal - parseFloat(transactionDetails[i].quantity): // if stock out (ransactionObject.stock == false), deduct to remaining balance
-        remBal + parseFloat(transactionDetails[i].quantity); // if stock in (ransactionObject.stock == true), add to remaining balance
+        parseFloat(remBal) - parseFloat(transactionDetails[i].quantity): // if stock out (ransactionObject.stock == false), deduct to remaining balance
+        parseFloat(remBal) + parseFloat(transactionDetails[i].quantity); // if stock in (ransactionObject.stock == true), add to remaining balance
     
+
+    console.log (
+       typeof parseFloat(remBal) , typeof parseFloat(transactionDetails[i].quantity) ,
+        parseFloat(remBal) , parseFloat(transactionDetails[i].quantity) 
+    )
+
     if (remainingBalance >= 0) {
         let errmsg = `${p.p.product_name} remaining balance is negative`;
         let errIndx = productsError.value.find(x => x === errmsg);
@@ -378,7 +395,7 @@ watch(
         transactionObject.customer_id = '';
         event.emit('TextAutoCompleteComponent:clearSearchText', "customer_name");
         for (let i in transactionDetails) {
-            transactionDetails[i].item_transaction_type = newVal;
+            transactionDetails[i].item_transaction_type = parseFloat(newVal);
             transactionDetails[i].stock = transactionObject.stock;
             convertQuantities(i);
         }
