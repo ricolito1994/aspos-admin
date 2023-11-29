@@ -235,12 +235,6 @@ const convertQuantities = (i) => {
         !transactionObject.stock ? 
         parseFloat(remBal) - parseFloat(transactionDetails[i].quantity): // if stock out (ransactionObject.stock == false), deduct to remaining balance
         parseFloat(remBal) + parseFloat(transactionDetails[i].quantity); // if stock in (ransactionObject.stock == true), add to remaining balance
-    
-
-    console.log (
-       typeof parseFloat(remBal) , typeof parseFloat(transactionDetails[i].quantity) ,
-        parseFloat(remBal) , parseFloat(transactionDetails[i].quantity) 
-    )
 
     if (remainingBalance >= 0) {
         let errmsg = `${p.p.product_name} remaining balance is negative`;
