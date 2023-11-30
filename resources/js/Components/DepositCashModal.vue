@@ -123,6 +123,9 @@ const computeTotals = () => {
     let amtreq = isNaN(parseFloat(amountRequested.value)) ? 0 : 
         parseFloat(amountRequested.value);
     if (requestType.value == 'CASH_DEPOSIT') {
+        console.log(amtreq, cashbal,
+        typeof cashbal,
+        typeof amtreq)
         currentCashBalance.value = amtreq + cashbal;
         props.transaction['amt_released'] = 0;
         props.transaction['final_amt_received'] = amountRequested.value;
