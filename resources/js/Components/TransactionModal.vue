@@ -389,7 +389,7 @@ watch(
         transactionObject.customer_id = '';
         event.emit('TextAutoCompleteComponent:clearSearchText', "customer_name");
         for (let i in transactionDetails) {
-            transactionDetails[i].item_transaction_type = parseFloat(newVal);
+            transactionDetails[i].item_transaction_type = newVal;
             transactionDetails[i].stock = transactionObject.stock;
             convertQuantities(i);
         }
