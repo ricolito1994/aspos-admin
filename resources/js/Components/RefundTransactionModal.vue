@@ -125,8 +125,6 @@ const save = async () => {
             transactionObject.transaction_date = currentDate.value;
             
             isUpdate.value = !isUpdate.value;
-            console.log('transactionObject', transactionObject)
-            return;
             let transaction = await saveTransaction({
                 transaction: transactionObject,
                 transactionDetails: transactionDetails.value,
