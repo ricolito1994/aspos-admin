@@ -313,6 +313,12 @@ const save = async ( ) => {
         alertBox('Please Choose a Product.', ALERT_TYPE.ERR);
         return;
     }
+
+    if (transactionObject.item_transaction_type=='DELIVERY' && userObject.value.designation !== 1) {
+        alertBox('Your designation cant add products.', ALERT_TYPE.ERR);
+        return;
+    }
+
     try {
 
         if (transactionObject.item_transaction_type == 'DELIVERY') {
