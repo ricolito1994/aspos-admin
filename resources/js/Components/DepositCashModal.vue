@@ -119,7 +119,7 @@ const save = async () => {
 
 
 const computeTotals = () => {
-    let cashbal = tempCashBal.value;
+    let cashbal = parseFloat(tempCashBal.value);
     let amtreq = isNaN(parseFloat(amountRequested.value)) ? 0 : 
         parseFloat(amountRequested.value);
     if (requestType.value == 'CASH_DEPOSIT') {

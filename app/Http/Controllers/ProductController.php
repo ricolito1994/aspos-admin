@@ -60,6 +60,10 @@ class ProductController extends Controller
                     'user_id' => $prod['user_id'],
                     'company_id' => $prod['company_id'],
                 ]);
+            
+            if ($validate->fails()) {
+                return response()->json(['err'=>$validate->errors()], 500);
+            }
                  
             #$product->pricelist()->delete();
             #$prices = Pricelist::where('product_id', $product->id);

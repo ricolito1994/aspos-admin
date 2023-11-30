@@ -130,19 +130,24 @@ const save = async () => {
         return;
     }
 
-    product.product_code = product.product_code.toUpperCase();
+    try {
+        product.product_code = product.product_code.toUpperCase();
 
-    let newProduct = await saveProduct({
-        product : product,
-        prices : priceList,
-    });
-    
-    newProduct.data['isUpdate'] = isUpdate.value;
-    isUpdate.value = false;
+        let newProduct = await saveProduct({
+            product : product,
+            prices : priceList,
+        });
+        
+        newProduct.data['isUpdate'] = isUpdate.value;
+        isUpdate.value = false;
 
-    alertBox ("Success!", ALERT_TYPE.MSG)
+        alertBox ("Success!", ALERT_TYPE.MSG)
 
-    emit('onAddProduct', newProduct.data)
+        emit('onAddProduct', newProduct.data)
+    } catch (e) {
+        alertBox(e.response.data.err ? e.response.data.err : e.response.data.message, 
+            ALERT_TYPE.ERR);
+    }
 }
 
 const genarateProductCode = () => {
