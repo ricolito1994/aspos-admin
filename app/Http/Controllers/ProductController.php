@@ -34,7 +34,7 @@ class ProductController extends Controller
     {
         $data = $request->all();
         $prod = $data['product'];
-        #dd($data,$prod);
+        
         try {
             DB::beginTransaction();
             $arrPrices = [];
@@ -45,9 +45,16 @@ class ProductController extends Controller
                 'product_name' => 'required|string|unique:products|max:255',
             ],
             [
+                'product_code.required' => 'Product code is required.',
+                'product_name.required' => 'Product name is required.',
                 'product_code.unique' => 'Product code already exists.',
-                'product_code.name' => 'Product name already exists.',
+                'product_name.unique' => 'Product name already exists.',
             ]);
+
+            
+            if ($validate->fails() && !isset($prod['id'])) {
+                return response()->json(['err'=>$validate->errors()], 500);
+            }
             
             $product = Product::updateOrCreate(
                 [
@@ -61,9 +68,7 @@ class ProductController extends Controller
                     'company_id' => $prod['company_id'],
                 ]);
             
-            if ($validate->fails()) {
-                return response()->json(['err'=>$validate->errors()], 500);
-            }
+            
                  
             #$product->pricelist()->delete();
             #$prices = Pricelist::where('product_id', $product->id);
