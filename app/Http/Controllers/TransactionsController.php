@@ -97,33 +97,39 @@ class TransactionsController extends Controller
     }
 
     public function getTransactions (
-        $companyId, 
-        $branchId, 
-        $searchString, 
-        $transDateFrom, 
-        $transDateTo,
+        $companyId = 1, 
+        $branchId = 1, 
+        $searchString = 'false', 
+        $transDateFrom = null, 
+        $transDateTo = null,
         $userId = null,
     ) {
         // get many transactions
         try {
             $conds =  [
                 ['company_id', $companyId],
-                ['branch_id', $branchId],
-                ['transaction_code', 'LIKE', "%$searchString%"]
+                ['branch_id', $branchId]
             ];
 
-            if ($userId) 
-                $conds[] = ['user_id', $userId];
-                
-            if($searchString == "false") unset($conds[2]);
+            if ($searchString != 'false') $conds[] = ['transaction_code', 'LIKE', "%$searchString%"];
+            if ($userId) $conds[] = ['user_id', $userId];
                
             $transactions = Transaction::where ($conds)
+                    ->with('customer')
+                    ->with('createdBy')
+                    ->with('requestedBy')
+                    ->orderBy('id', 'ASC')
+                    ->paginate(10);
+            
+            if ($transDateFrom && $transDateTo) {
+                $transactions = Transaction::where ($conds)
                     ->whereBetween('transaction_date', [$transDateFrom, $transDateTo])
                     ->with('customer')
                     ->with('createdBy')
                     ->with('requestedBy')
                     ->orderBy('id', 'ASC')
-                    ->get();
+                    ->paginate(10);
+            }
             
             return response()->json(['res' => $transactions], 200);
 

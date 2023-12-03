@@ -139,12 +139,14 @@ class ProductController extends Controller
                     $query->where('branch_id', $user->selected_branch);
                 });
 
-            $productsRes = $products->orderBy('id', 'DESC')->get();
+            $productsRes = $products
+                ->orderBy('id', 'DESC')
+                ->paginate(10);
             
             foreach ($productsRes as $k => $p) {
                 
                 $remainingBalance = count($p['transactions']) > 0 ? $p['transactions'][0]['remaining_balance'] : 0;
-                $unit_obj = [];
+                $unit_obj = []; 
                 $unitRemainingBal = '-';
 
                 if (count($p['transactions']) > 0) {

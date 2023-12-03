@@ -1,5 +1,10 @@
 <script setup>
-import { ref } from 'vue';
+import { 
+    ref, 
+    onMounted, 
+    watch 
+} from 'vue';
+import { providePaginationData } from '@/Services/ServerRequests'
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 let props = defineProps({
@@ -7,15 +12,20 @@ let props = defineProps({
         type: Array,
     },
     resultData : {
-        type: Array,
+        type: Object,
+    },
+    getData : {
+        type: Function,
     }
 })
 
 let emit = defineEmits(['viewItemDetails'])
 
+const tableData = ref(null)
+
 const actions = ref ([]);
 
-const paginate = (index) => {
+/* const paginate = (index) => {
     selectedPage.value = index;
 }
 
@@ -25,33 +35,55 @@ const calculatePaginateButtons = (totalItems, itemsPerPage) => {
     const numberOfButtons = Math.ceil(totalItems / itemsPerPage);
     return numberOfButtons;
 }
-
+ */
 const viewItemDetails = (data) => {
     emit('viewItemDetails', data)
 }
 
-const totalItems = props.resultData?.length;
-const itemsPerPage = 100;
+const provideData = async (url) => {
+    let res = [];
+    if (!props.getData) {
+        res = await providePaginationData(url);
+    } else {
+        res = await props.getData(url);
+    }
+    tableData.value = res.data.res ? res.data.res : res.data;
+}
 
+//const totalItems = props.resultData?.length;
+//const itemsPerPage = 100;
+//let numPaginate = calculatePaginateButtons(totalItems, itemsPerPage);
+//let selectedPage = ref(1);
 
-let numPaginate = calculatePaginateButtons(totalItems, itemsPerPage);
-let selectedPage = ref(1);
+onMounted (() => {
+});
+
+watch (
+    () => props.resultData, 
+    (newValue) => {
+        tableData.value = newValue;
+    }
+);
 
 </script>
-<template>
+<template> 
     <div id="table-container">
         <div id="main-table" class="scrollbar">
             <table>
                 <thead>
                     <tr>
-                        <th v-for="(thead, index) in tableHeaders" :key="index" :style="thead.style ? thead.style : ''">
+                        <th 
+                            v-for="(thead, index) in tableHeaders" 
+                            :key="index" 
+                            :style="thead.style ? thead.style : ''"
+                        >
                             {{ thead.name }}
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     <!--result goes here-->
-                    <tr v-for="(res, index) in resultData" :key="index">
+                    <tr v-if="!tableData" v-for="(res, index) in resultData.data" :key="index">
                         <td v-for="(thead, index0) in tableHeaders" :key="index0" >
                             <span v-if="thead.name !== 'ACTIONS' && !thead.fxn">
                                 {{ res[thead.field] }}
@@ -71,17 +103,49 @@ let selectedPage = ref(1);
                             </span>
                         </td>
                     </tr>
+                    <tr v-else v-for="(res, index01) in tableData.data" :key="index01">
+                        <td v-for="(thead, index02) in tableHeaders" :key="index02" >
+                            <span v-if="thead.name !== 'ACTIONS' && !thead.fxn">
+                                {{ res[thead.field] }}
+                            </span>
+                            <span v-else-if="thead.fxn">
+                                {{ thead.fxn(res) }}
+                            </span>
+                            <span v-else>
+                                <PrimaryButton 
+                                    v-for="(action, index03) in thead.actions" 
+                                    :key="index03" 
+                                    :additionalStyles="`background:${action.color}`"
+                                    @click="action.func(res, index01)"
+                                >
+                                    {{ action.label }}
+                                </PrimaryButton>
+                            </span>
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
         <div id="pagination" align="center">
-            <div v-for="index in numPaginate" :key="index" class="paginate-btn-container">
-                <PrimaryButton 
-                    :additionalStyles="selectedPage == index ? 'padding:10px; background:#f05340':'padding:10px;'"
-                    @click="paginate(index)"
-                >
-                 {{ index }}
-                </PrimaryButton>
+            <div v-if="!tableData" v-for="link in resultData.links" :key="index" class="paginate-btn-container">
+                <span v-if="link.url!==null">
+                    <PrimaryButton 
+                        :additionalStyles="link.active ? 'padding:10px; background:#f05340':'padding:10px;'"
+                        @click="provideData(link.url)"
+                    >
+                        <span v-html="link.label"></span>
+                    </PrimaryButton>
+                </span>
+            </div>
+            <div v-else v-for="link in tableData.links" :key="index001" class="paginate-btn-container">
+                <span v-if="link.url!==null">
+                    <PrimaryButton 
+                        :additionalStyles="link.active ? 'padding:10px; background:#f05340':'padding:10px;'"
+                        @click="provideData(link.url)"
+                    >
+                        <span v-html="link.label"></span>
+                    </PrimaryButton>
+                </span>
             </div>
         </div>
     </div>

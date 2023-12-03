@@ -92,6 +92,20 @@ export function getProducts ( company_id , searchString ) {
     })
 }
 
+
+export function providePaginationData (url) {
+    let paginateRequest = axiosLoading.get(url);
+    return new Promise ((resolve, reject) => {
+        paginateRequest.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
+
 export function getProducts1 ( company_id , searchString ) {
     searchString = searchString ? searchString : false;
     let productsRequest = axios.get(`${host}/products/get/${company_id}/${searchString}`);
@@ -134,7 +148,6 @@ export function getTransaction (transactionId, userId) {
     })
 }
 
-
 export function getTransactions (
     company_id, 
     branch_id, 
@@ -143,11 +156,22 @@ export function getTransactions (
     transTo,
     userId,
 ) {
-    searchString = searchString ? searchString : false;
-    let urlStr = userId ? `${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}/${userId}` :
-        `${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}`;
+    //searchString = searchString ? searchString : false;
+    //let urlStr = userId ? `${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}/${userId}` :
+    //    `${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}`;
 
-    let productsRequest = axiosLoading.get(urlStr);
+    let paramlist = '';
+
+    let urlStr = `${host}/transactions/get/`;
+
+    paramlist += company_id ? `${company_id}/` : '';
+    paramlist += branch_id ? `${branch_id}/` : '';
+    paramlist += searchString ? `${searchString}/` : 'false/';
+    paramlist += transFrom ? `${transFrom}/` : '';
+    paramlist += transTo ? `${transTo}/` : '';
+    paramlist += userId ? `${userId}` : '';
+
+    let productsRequest = axiosLoading.get(`${urlStr}${paramlist}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)

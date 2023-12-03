@@ -211,14 +211,18 @@ const onSelectTransaction = (selectedTransaction) => {
        
         let product = sel.product ? sel.product : sel.pp;
         
+        //console.log(product.unit, sel.latest_rem_bal_unit)
         let latestUnitName = sel.latest_rem_bal_unit ? 
-            product.unit[product.unit.findIndex(x => x.id === parseInt(sel.latest_rem_bal_unit))].unit_name : 
+            product.unit[product.unit.findIndex(x => x.heirarchy === parseInt(sel.latest_rem_bal_unit))].unit_name : 
             selectedTransaction.ref_transaction.item_details[i].unit;
         
         let latestRemainingBalance = selectedTransaction.item_details[i]['latest_rem_bal_qty'] ? selectedTransaction.item_details[i]['latest_rem_bal_qty'] :
             sel.remaining_balance;
-        let selUnits = typeof sel['unit'] !== 'string' ? sel['unit']  : sel.pp.unit;
-        let selectedUnit = selUnits.find(x => x.heirarchy == sel.unit_id) ;
+        //let selUnits = typeof sel['unit'] !== 'string' ? sel['unit']  : sel.pp.unit;
+        //console.log('sel',sel)
+        let selUnits = product.unit;
+        let selectedUnit = selUnits.find(x => x.heirarchy === sel.unit_id);
+        console.log('selectedUnit.unit_name', selectedUnit.unit_name)
         selectedTransaction.item_details[i]['units'] = selUnits;
         selectedTransaction.item_details[i]['unit'] = selectedUnit.unit_name;
         selectedTransaction.item_details[i]['old_qty'] = 
@@ -267,7 +271,6 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         newCost = Math.abs(newCost - transCost);
     
     let selectedUnitIndex = transactionObject.item_details[transactionIndex].units.findIndex(x => x.heirarchy == transactionObject.item_details[transactionIndex].unit_id)
-    
     let convertedQuantity = convertQuantity(
         selProduct.unit,
         quantity,
@@ -480,10 +483,9 @@ onUnmounted(() => {
                                 type="text"
                             />
                         </div>
-
                         <div style="float:left; width:15%; padding:1%;"> 
                             <select disabled v-model="transactionDetail.unit_id" type="text" style="width:99%;">
-                                <option v-for="(unit, uIndex) in transactionDetail.units" :key="uIndex" :value="unit.id">
+                                <option v-for="(unit, uIndex) in transactionDetail.units" :key="uIndex" :value="unit.heirarchy">
                                     {{ unit.unit_name }}
                                 </option>
                             </select>

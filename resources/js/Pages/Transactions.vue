@@ -417,6 +417,18 @@ const options = ref([
             searchTransactions(true)
         }
     },
+    {
+        label : `Search Transaction Code`,
+        func : async () => {
+            let transactions = await getTransactions(
+                companyObject.value.id, 
+                branchObject.value.id,
+                searchString.value, 
+            );
+            resultData.value = transactions.data.res;
+            loadBalances();
+        }
+    },
 ]);
 
 const toggleDisplayDropdown = ( ) => {

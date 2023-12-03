@@ -62,8 +62,12 @@ const searchItems = async (event) => {
         currentIndex.value = -1;
         let res = await props.getData(1, searchString.value)
         isLoading.value = false;
-        results.value = res.data.res ? res.data.res : res.data;
-        
+        let r = res.data.res ? res.data.res : res.data;
+        if (r.data) {
+            results.value = r.data;
+        } else {
+            results.value = r;
+        }
     } else {
         isLoading.value = false;
     }
@@ -148,6 +152,7 @@ onUnmounted(() => {
         <input 
             type="text"
             class="uppercase"
+            label="INPUT YOUR TEXT HERE..."
             v-model="searchString" 
             @keyup="searchItems" 
             :style="style ? style : 'width:100%;'"

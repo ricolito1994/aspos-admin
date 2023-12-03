@@ -3,7 +3,7 @@ export const convertQuantity = (
     quantity,
     unitObj,
 ) => {
-    let selUnit = unitArray.find(x => x.heirarchy === unitObj.id)
+    let selUnit = unitArray.find(x => x.heirarchy === unitObj.heirarchy)
     let j = unitObj.heirarchy - 1;
     let cdn = selUnit.heirarchy >= unitObj.heirarchy;
     let ctr =  selUnit.heirarchy - 1 ;

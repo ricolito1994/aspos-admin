@@ -46,7 +46,7 @@ Route::middleware('auth')->group(function () {
         ->name('transaction.get');
     Route::get('/transaction/search/{searchString}/{companyId}/{branchId}/{userId?}', [TransactionsController::class, 'searchTransaction'])
         ->name('transaction.search');
-    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom}/{transTo}/{userId?}', 
+    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom?}/{transTo?}/{userId?}', 
         [TransactionsController::class, 'getTransactions'])->name('transactions.get');
     Route::post('/transaction/save', [TransactionsController::class, 'createTransaction'])
         ->name('transaction.save');

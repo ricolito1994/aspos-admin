@@ -1,7 +1,20 @@
 <script setup>
-import { getProducts, getProduct } from '@/Services/ServerRequests';
-import { usePage, Head, Link } from '@inertiajs/vue3';
-import { onMounted, onUnmounted, ref, reactive } from 'vue';
+import { 
+    getProducts, 
+    getProduct,
+    providePaginationData 
+} from '@/Services/ServerRequests';
+import { 
+    usePage, 
+    Head, 
+    Link 
+} from '@inertiajs/vue3';
+import { 
+    onMounted, 
+    onUnmounted, 
+    ref, 
+    reactive 
+} from 'vue';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DataTable from '@/Components/DataTable.vue';
@@ -84,6 +97,7 @@ const searchProducts = async ( reset ) => {
     resultData.value = products.data;
 }
 
+
 const onOpenProductDialog = ( ) => {
 }
 
@@ -164,7 +178,12 @@ const tableHeaders = ref([
         </div>
         
         <div style="width:100%;height:85%;">
-            <DataTable @viewItemDetails=showProductModal :tableHeaders="tableHeaders" :resultData="resultData" />
+            <DataTable 
+                @viewItemDetails=showProductModal 
+                :tableHeaders="tableHeaders" 
+                :resultData="resultData" 
+                :getData="providePaginationData"
+            />
         </div>
     </AppLayout>
 </template>
