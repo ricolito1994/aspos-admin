@@ -61,6 +61,7 @@ onMounted (() => {
 watch (
     () => props.resultData, 
     (newValue) => {
+        console.log('newValue', newValue)
         tableData.value = newValue;
     }
 );

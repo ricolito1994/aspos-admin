@@ -120,6 +120,8 @@ const tableHeaders = ref([
             let prices = "";
             let priceList = res.pricelist.find(x => x.is_default)
             
+            if (!priceList) return ;
+
             for (let i in priceList.unit) {
                 let sel = priceList.unit[i];
                 prices += `${sel.price_per_unit}/${sel.unit_name}`;
