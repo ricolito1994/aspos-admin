@@ -144,12 +144,14 @@ const onSelectProduct = async (params) => {
         return;
     }
 
-    transactionDetails[indexItem].units = prod.pricelist[0].unit;
-    transactionDetails[indexItem].unit = prod.pricelist[0].unit[0].unit_name;
-    transactionDetails[indexItem].unit_id = prod.pricelist[0].unit[0].heirarchy;
+    let defaultPriceList = prod.pricelist.find(x => x.is_default == true)
 
-    transactionDetails[indexItem].price_per_unit = parseFloat(prod.pricelist[0].unit[0].price_per_unit);
-    transactionDetails[indexItem].cost_per_unit = parseFloat(prod.pricelist[0].unit[0].cost_per_unit);
+    transactionDetails[indexItem].units = defaultPriceList.unit;
+    transactionDetails[indexItem].unit = defaultPriceList.unit[0].unit_name;
+    transactionDetails[indexItem].unit_id = defaultPriceList.unit[0].heirarchy;
+
+    transactionDetails[indexItem].price_per_unit = parseFloat(defaultPriceList.unit[0].price_per_unit);
+    transactionDetails[indexItem].cost_per_unit = parseFloat(defaultPriceList.unit[0].cost_per_unit);
 
     transactionDetails[indexItem].total_cost = 
         transactionDetails[indexItem].cost_per_unit * parseFloat(transactionDetails[indexItem].quantity);
@@ -196,7 +198,9 @@ const convertQuantities = (i) => {
         if (indx >= 0) productsError.value.splice(indx, 1);
     }
 
-    let selectedProductUnits = p.q.pricelist[0].unit;
+    let defaultPriceList = p.q.pricelist.find(x => x.is_default == true)
+
+    let selectedProductUnits = defaultPriceList.unit;
 
     let selUnit = selectedProductUnits.find(x => x.heirarchy === transactionDetails[i].unit_id)
 
@@ -297,7 +301,7 @@ const removeItem = (transactionDetailIndex) => {
 
 const save = async ( ) => {
     tDetails()
-
+    console.log('userObject.value.designation ',transactionObject.item_transaction_type, userObject.value.designation)
     if (productsError.value.length > 0) {
         alertBox(productsError.value, ALERT_TYPE.ERR);
         productsError.value = [];
@@ -314,7 +318,7 @@ const save = async ( ) => {
         return;
     }
 
-    if (transactionObject.item_transaction_type=='DELIVERY' && userObject.value.designation !== 1) {
+    if (transactionObject.item_transaction_type=='DELIVERY' && userObject.value.designation != 1) {
         alertBox('Your designation cant add products.', ALERT_TYPE.ERR);
         return;
     }

@@ -90,7 +90,9 @@ class ProductController extends Controller
                     "branch_id" => $price["branch_id"],
                 ];
                 
-                $priceList = $product->pricelist()->create($arrPrices);
+                $priceList = $product
+                    ->pricelist()
+                    ->create($arrPrices);
 
                 foreach ($price['unit'] as $unit) {
                     $unit['product_id'] = $product->id;
@@ -134,7 +136,9 @@ class ProductController extends Controller
                     //$query->max('id');
                 })
                 ->with('pricelist', function($query) use ($user) {
-                    $query->with('unit');
+                    $query->with('unit', function ($query) {
+                        $query->whereNull('deleted_at');
+                    });
                     $query->where('is_default', 1);
                     $query->where('branch_id', $user->selected_branch);
                 });
@@ -185,12 +189,21 @@ class ProductController extends Controller
             $product = Product::with(['pricelist' => function ($query) use ($user) {
                 $query->where('branch_id', $user->selected_branch);
                 $query->whereNull('deleted_at');
-            }])->where('id',$product_id)->first();
+            },
+                'transactions' => function ($query) {
+                    $query->orderBy('created_at');
+                }
+            ])
+            ->where('id',$product_id)->first();
 
             $pricelist = $product['pricelist'];
             $ctr = 0;
             foreach ($pricelist as $price) {
-                $units = Unit::where('price_list_id', $price['id'])->orderBy('heirarchy', 'ASC')->get();
+                $units = Unit::where([
+                    ['price_list_id', $price['id']],
+                ])
+                ->whereNull('deleted_at')
+                ->orderBy('heirarchy', 'ASC')->get();
                 $product['pricelist'][$ctr]['unit'] = $units;
                 $ctr++;
             }
@@ -199,5 +212,5 @@ class ProductController extends Controller
             return response()->json(['err' => $e], 500);
         }
     }
-
+    
 }

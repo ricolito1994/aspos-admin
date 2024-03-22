@@ -118,7 +118,7 @@ class TransactionsController extends Controller
                     ->with('customer')
                     ->with('createdBy')
                     ->with('requestedBy')
-                    ->orderBy('id', 'ASC')
+                    ->orderBy('id', 'DESC')
                     ->paginate(10);
             
             if ($transDateFrom && $transDateTo) {
@@ -127,7 +127,7 @@ class TransactionsController extends Controller
                     ->with('customer')
                     ->with('createdBy')
                     ->with('requestedBy')
-                    ->orderBy('id', 'ASC')
+                    ->orderBy('id', 'DESC')
                     ->paginate(10);
             }
             

@@ -200,7 +200,10 @@ const loadBalances = async () => {
 
 const onAddTransaction = (transaction) => {
     if (transaction.isUpdate) {
-        resultData.value.unshift(transaction);
+        searchTransactions();
+        //resultData.value.push(transaction);
+        //console.log('shift', resultData.value)
+        return;
     } else {
         // update product
         let indx = resultData.value.findIndex(x => x.id == transaction.id)
@@ -219,7 +222,7 @@ const searchTransactions = async ( reset ) => {
         searchUser.value = {};
         event.emit('TextAutoCompleteComponent:clearSearchText', "name");
     }
-    
+   
     let transactions = await getTransactions(
         companyObject.value.id, 
         branchObject.value.id,

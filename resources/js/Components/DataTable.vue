@@ -56,6 +56,9 @@ const provideData = async (url) => {
 //let selectedPage = ref(1);
 
 onMounted (() => {
+    if (! props.resultData.data) {
+        props.resultData.data = props.resultData
+    }
 });
 
 watch (

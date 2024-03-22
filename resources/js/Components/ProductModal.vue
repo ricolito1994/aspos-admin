@@ -211,12 +211,14 @@ const setToDefaultPrice = (priceIndex) => {
 
 onMounted (() => {
     isUpdate.value = !product.id ? true : false;
-    console.log(product)
+
     if (!product.id) {
         product.product_code = genarateProductCode()
         title.value = "NEW PRODUCT";
     } else {
         // update/edit product mode
+        
+        console.log(product)
         title.value = product.product_name;
         priceList = product.pricelist
     }
