@@ -462,6 +462,13 @@ const tableHeaders = ref([
             return res['final_amt_received'];
         }
     },
+    {
+        name : 'TRANSACTION DATE',
+        field : 'transaction_date',
+        fxn : (res) => {
+            return res['transaction_date'];
+        }
+    },
     /* {
         name : 'STOCK',
         field : 'stock',
