@@ -79,7 +79,6 @@ class TransactionsController extends Controller
                 $transaction = Transaction::create($transactionData);
                 
                 foreach ($transactionDetails as $transactionDetail) {
-                    // iterate through transaction details
                     $transaction->itemDetails()->create($transactionDetail);
                 }
             } else {
