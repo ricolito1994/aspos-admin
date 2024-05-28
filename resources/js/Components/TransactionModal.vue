@@ -73,7 +73,7 @@ const currentCashBalance = ref (parseFloat(0));
 const createdBy = ref (transactionObject.createdBy ? transactionObject.createdBy : userObject);
 
 const amount_payable = computed(()=>{
-    if (transactionObject.item_transaction_type == 'DELIVERY') {
+    if (transactionObject.item_transaction_type == 'DELIVERY' || transactionObject.item_transaction_type == 'STOCK OUT') {
         return 0;
     }
 
@@ -396,6 +396,8 @@ watch(
         isVAT.value = false;
         transactionObject.stock = itemTransactionTypes[newVal].stock;
         customerType.value = ((newVal == 'DELIVERY') ? 2 : 1);
+        console.log(newVal)
+        if (newVal == 'STOCK OUT') transactionObject.amt_released = null;
         transactionObject.customer_id = '';
         event.emit('TextAutoCompleteComponent:clearSearchText', "customer_name");
         for (let i in transactionDetails) {

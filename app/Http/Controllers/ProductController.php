@@ -118,7 +118,7 @@ class ProductController extends Controller
     {
         try {
             $user = User::where('id', Auth::id())->first();
-            $products = Product::where('company_id', $companyId);
+            $products = Product::where('company_id', $companyId)->whereNull('deleted_at');
            
             if($searchString !== 'false') {
                 $products = Product::where('product_code', 'LIKE', "%$searchString%")
@@ -187,7 +187,13 @@ class ProductController extends Controller
             $product = Product::with(['pricelist' => function ($query) use ($user) {
                 $query->where('branch_id', $user->selected_branch);
                 $query->whereNull('deleted_at');
-            }])->where('id',$product_id)->first();
+            },
+                'transactions' => function ($query) {
+                    $query->orderBy('created_at');
+                }
+            ])
+            ->whereNull('deleted_at')
+            ->where('id',$product_id)->first();
 
             $pricelist = $product['pricelist'];
             $ctr = 0;
@@ -205,4 +211,21 @@ class ProductController extends Controller
         }
     }
 
+    public function delete($productId) 
+    {
+        try {
+            $user = User::where('id', Auth::id())->first();
+            $product = Product::find($productId)->with('transactions')->first();
+
+            if (intval($user->designation) !== 1) {
+                return response()->json(['error' => 'You are not allowed to delete a product.'], 500);
+            }
+            
+            Product::find($productId)->delete();
+            return response()->json(['message' => 'Product deleted successfully'], 200);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e], 500);
+        }
+    }
+    
 }

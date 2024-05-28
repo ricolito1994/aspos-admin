@@ -78,6 +78,18 @@ export function saveProduct ( product ) {
     })
 }
 
+export function deleteProduct ( productId ) {
+    let newProduct = axiosLoading.delete(`${host}/product/delete/${productId}`, productId);
+    return new Promise ((resolve, reject) => {
+        newProduct.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
 
 export function getProducts ( company_id , searchString ) {
     searchString = searchString ? searchString : false;

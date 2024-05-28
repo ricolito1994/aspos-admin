@@ -35,6 +35,8 @@ import { randomString } from '@/Services/CodeGenerator';
 
 import TransactionModalLayout from '@/Layouts/TransactionModalLayout.vue'
 
+const userObject = ref(JSON.parse(localStorage.getItem('user')));
+
 const itemTransactionTypes = reactive (TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.types)
 
 const companyObject = reactive (JSON.parse(localStorage.getItem('company')));
@@ -103,7 +105,7 @@ const save = async () => {
 
     if (confirm) {
         try {
-            if (defaultStock.value == 1) {
+            /* if (defaultStock.value == 1) {
                 if (transactionObject.amt_released) {
                     transactionObject['remaining_balance'] = 
                         parseFloat(transactionObject['remaining_balance']) -
@@ -113,7 +115,25 @@ const save = async () => {
                 transactionObject['remaining_balance'] = 
                     parseFloat(transactionObject['remaining_balance']) +
                     parseFloat(currentCashBalance.value); 
-            }
+            } */
+            if (defaultStock.value == 0) {
+
+                transactionObject['remaining_balance'] = parseFloat(transactionObject['remaining_balance']) -
+                    parseFloat(transactionObject['amt_released'] ); 
+                transactionObject.amt_received = 0;
+                transactionObject.final_amt_received = 0;
+                transactionObject.final_amt_released = transactionObject['amt_released'] ;
+                
+            } else {
+             
+                transactionObject['remaining_balance'] = parseFloat(transactionObject['remaining_balance']) +
+                    parseFloat(transactionObject['amt_received'] ); 
+                transactionObject.amt_released = 0;
+                transactionObject.final_amt_released = 0;
+                transactionObject.final_amt_received = transactionObject['amt_received'] ;
+                
+            } 
+
 
             if (transactionObject['remaining_balance'] < 0) {
                 alertBox(`Remaining balance is negative: ${transactionObject['remaining_balance']}`
@@ -125,6 +145,7 @@ const save = async () => {
             transactionObject.transaction_date = currentDate.value;
             
             isUpdate.value = !isUpdate.value;
+            //console.log(transactionObject, transactionDetails.value)
             let transaction = await saveTransaction({
                 transaction: transactionObject,
                 transactionDetails: transactionDetails.value,
@@ -135,7 +156,8 @@ const save = async () => {
             transactionObject = transaction.data.res;
 
             alertBox('Transaction success!', ALERT_TYPE.MSG);
-            emit('onAddTransaction', transaction.data.res); 
+            emit('onAddTransaction', transaction.data.res);
+            
 
         } catch (e) {
             alertBox(e.response.data.err ? e.response.data.err : e.response.data.message, 
@@ -195,6 +217,14 @@ const onSelectTransaction = (selectedTransaction) => {
     transactionObject = selectedTransaction;
     transactionObject.transaction_code = !selectedTransaction.ref_transaction ? randomString(15) : 
         selectedTransaction.ref_transaction.transaction_code;
+    
+    console.log('selectedTransaction', transactionObject)
+
+    if (transactionObject['amt_received']) {
+        transactionObject['amt_released'] = transactionObject['amt_received'];
+    } else {
+        transactionObject['amt_received'] = transactionObject['amt_released'];
+    }
 
     defaultStock.value = !selectedTransaction.ref_transaction ? selectedTransaction.stock : 
         selectedTransaction.ref_transaction.stock;
@@ -222,7 +252,7 @@ const onSelectTransaction = (selectedTransaction) => {
         //console.log('sel',sel)
         let selUnits = product.unit;
         let selectedUnit = selUnits.find(x => x.heirarchy === sel.unit_id);
-        console.log('selectedUnit.unit_name', selectedUnit.unit_name)
+        //console.log('selectedUnit.unit_name', selectedUnit.unit_name)
         selectedTransaction.item_details[i]['units'] = selUnits;
         selectedTransaction.item_details[i]['unit'] = selectedUnit.unit_name;
         selectedTransaction.item_details[i]['old_qty'] = 
@@ -321,11 +351,13 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
     /* transactionObject[defaultStock.value == 0 ? 'amt_received' : 'amt_released']
         = totalAmountRefund.value; */
 
-    if (transactionObject['amt_released'] && defaultStock.value == 1)
+    if (transactionObject['amt_released'] && defaultStock.value == 0)
         transactionObject['amt_released']  = totalAmountRefund.value;
     else transactionObject['amt_received']  = totalAmountRefund.value;
 
     if (defaultStock.value == 0) {
+        transactionObject['final_amt_released'] = totalAmountRefund.value;
+    } else {
         transactionObject['final_amt_received'] = totalAmountRefund.value;
     }
 }
@@ -511,7 +543,7 @@ onUnmounted(() => {
                         <input  
                             type="text" 
                             v-model="transactionObject.amt_released"
-                            v-if="defaultStock == 1" 
+                            v-if="defaultStock == 0" 
                         />
                         <input v-else type="text" v-model="transactionObject.amt_received" />
                     </div>

@@ -36,6 +36,9 @@ export const TRANSACTION_MODAL_CONSTANTS = {
             'DELIVERY' : {
                 stock : true,
             },
+            'STOCK OUT' : {
+                stock : false,
+            },
         }
     }
 }

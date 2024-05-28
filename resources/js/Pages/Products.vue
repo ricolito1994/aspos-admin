@@ -1,20 +1,26 @@
 <script setup>
 import { 
+    onMounted, 
+    onUnmounted, 
+    ref, 
+    reactive 
+} from 'vue';
+import { 
     getProducts, 
     getProduct,
-    providePaginationData 
+    deleteProduct,
+    providePaginationData
 } from '@/Services/ServerRequests';
 import { 
     usePage, 
     Head, 
     Link 
 } from '@inertiajs/vue3';
-import { 
-    onMounted, 
-    onUnmounted, 
-    ref, 
-    reactive 
-} from 'vue';
+import {
+    alertBox,
+    customerModal,
+    ALERT_TYPE
+} from '@/Services/Alert'
 import AppLayout from '@/Layouts/AppLayout.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DataTable from '@/Components/DataTable.vue';
@@ -47,10 +53,14 @@ const props = defineProps({
 
 
 
-onMounted ( async () => {
+onMounted (() => {
+    loadProducts();
+})
+
+const loadProducts = async () => {
     let products = await getProducts(companyObject.value.id);
     resultData.value = products.data;
-})
+}
 
 const showProductModal =  async ( product ) => {
     if(typeof product == 'object') {
@@ -68,6 +78,25 @@ const showProductModal =  async ( product ) => {
     }
 
     isShowProductModal.value = !isShowProductModal.value;
+}
+
+const deleteProductItem = async (product) => {
+    try {
+        let confirm = await alertBox("", ALERT_TYPE.CONFIRMATION)
+
+        if (confirm) {
+            if (product.transactions.length > 0) {
+                alertBox('This product has transactions, cannot delete.', ALERT_TYPE.ERR);
+                return;
+            }
+            await deleteProduct(product.id);
+            loadProducts();
+            alertBox('Deleted Successfully.', ALERT_TYPE.MSG);
+        }
+    } catch (e) {
+        if(e.response)
+        alertBox(e.response.data.error, ALERT_TYPE.ERR);
+    }
 }
 
 const catchChangeBranch = async (branch) => {
@@ -145,9 +174,14 @@ const tableHeaders = ref([
         style: 'width:300px;',
         actions : {
             view : {
-                color : 'blue',
+                color : 'rgb(31 41 55 / var(--tw-bg-opacity))',
                 label : 'View',
                 func : showProductModal
+            },
+            delete : {
+                color : '#f05340',
+                label : 'delete',
+                func : deleteProductItem
             },
         }
     }

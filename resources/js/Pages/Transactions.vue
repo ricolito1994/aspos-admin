@@ -661,7 +661,7 @@ const tableHeaders = ref([
             </div>
         </div>
         
-        <div style="width:100%;height:85%;">
+        <div style="width:100%;height:75%;">
             <DataTable @viewItemDetails=showTransactionModal :tableHeaders="tableHeaders" :resultData="resultData" />
         </div>
         <div style="width:100%;height:15%;">
