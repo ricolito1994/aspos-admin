@@ -136,8 +136,8 @@ class ProductController extends Controller
                     //$query->max('id');
                 })
                 ->with('pricelist', function($query) use ($user) {
-                    $query->with('unit', function ($query) {
-                        $query->whereNull('deleted_at');
+                    $query->with('unit', function ($q) {
+                        $q->whereNull('deleted_at');
                     });
                     $query->where('is_default', 1);
                     $query->where('branch_id', $user->selected_branch);
@@ -199,11 +199,18 @@ class ProductController extends Controller
             $pricelist = $product['pricelist'];
             $ctr = 0;
             foreach ($pricelist as $price) {
+<<<<<<< HEAD
                 $units = Unit::where([
                     ['price_list_id', $price['id']],
                 ])
                 ->whereNull('deleted_at')
                 ->orderBy('heirarchy', 'ASC')->get();
+=======
+                $units = Unit::where('price_list_id', $price['id'])
+                    ->whereNull('deleted_at')
+                    ->orderBy('heirarchy', 'ASC')
+                    ->get();
+>>>>>>> fe36d4e69aa840e669e8e0440f2165a99a5b00c2
                 $product['pricelist'][$ctr]['unit'] = $units;
                 $ctr++;
             }

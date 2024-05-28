@@ -186,6 +186,8 @@ const newUnit = (priceIndex, unitIndex) => {
         cost_per_unit : 0.0,
         is_default: priceList[priceIndex].is_default,
     }
+    if (priceList[priceIndex].id) unit['price_list_id'] = priceList[priceIndex].id;
+
     priceList[priceIndex].unit.push (unit);
 }
 

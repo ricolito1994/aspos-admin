@@ -124,7 +124,7 @@ const tableHeaders = ref([
 
             for (let i in priceList.unit) {
                 let sel = priceList.unit[i];
-                prices += `${sel.price_per_unit}/${sel.unit_name}`;
+                prices += `${sel.price_per_unit}/${sel.unit_name} `;
             }
             
             return prices;
