@@ -224,7 +224,6 @@ class TransactionsController extends Controller
                 ->first();
             $ctr = 0;
             foreach ($transaction->itemDetails as $transactionDetail) {
-                // get product, price/cost of each transaction detail
                 $transaction->itemDetails[$ctr]['pp'] = 
                     $transactionDetail
                         ->product()
