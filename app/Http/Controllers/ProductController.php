@@ -98,10 +98,20 @@ class ProductController extends Controller
                 }
             }
 
+            /*$productTransactions = Product::find($product->id)
+                ->with('transactions', function($query) use ($user) {
+                    $query->with('transaction');
+                    $query->where('branch_id', $user->selected_branch);
+                    $query->orderBy('id', 'DESC');
+                    $query->max('id');
+                })
+                ->get();*/
+
             $product['pricelist'] = Pricelist::where('product_id', $product->id)
                 ->with('unit')
                 ->get();
-
+            
+            //$product['transactions'] = $productTransactions;
             $product['remaining_balance'] = 0;
             $product['unit'] = '-';
             DB::commit();
@@ -167,10 +177,11 @@ class ProductController extends Controller
                     $unitRemainingBal = $unit ? $unit->unit_name : '-';
                     $unit_obj = $unit ? $unit : [];
                 } 
-                
+                $ppunit = (isset($unit_obj['price_per_unit']) ? $unit_obj['price_per_unit'] : '');
                 $productsRes[$k]['remaining_balance'] = $remainingBalance;
                 $productsRes[$k]['unit_name'] = $unitRemainingBal;
                 $productsRes[$k]['unit_obj'] = $unit_obj;
+                $productsRes[$k]['price'] = $ppunit.'/'.$unitRemainingBal;
             } 
             
             return response()->json($productsRes, 200);
@@ -184,10 +195,11 @@ class ProductController extends Controller
         try {
             $user = User::where('id', Auth::id())->first();
             
-            $product = Product::with(['pricelist' => function ($query) use ($user) {
-                $query->where('branch_id', $user->selected_branch);
-                $query->whereNull('deleted_at');
-            },
+            $product = Product::with([
+                'pricelist' => function ($query) use ($user) {
+                    $query->where('branch_id', $user->selected_branch);
+                    $query->whereNull('deleted_at');
+                },
                 'transactions' => function ($query) {
                     $query->orderBy('created_at');
                 }

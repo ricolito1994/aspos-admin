@@ -14,8 +14,6 @@ import {
     getCustomers,
     getCurrentBalance
 } from '@/Services/ServerRequests';
-import PrimaryButton from '@/Components/PrimaryButton.vue';
-import TextAutoComplete from './TextAutoComplete.vue';
 import {
     TRANSACTION_MODAL_CONSTANTS,
     DISCOUNT_LIST,
@@ -27,6 +25,10 @@ import {
     customerModal,
     ALERT_TYPE
 } from '@/Services/Alert'
+import PrimaryButton from '@/Components/PrimaryButton.vue';
+import TextAutoComplete from './TextAutoComplete.vue';
+import Modal from '@/Components/Modal.vue';
+import ProductModal from '@/Components/ProductModal.vue';
 
 const props = defineProps({
     transaction : {
@@ -37,6 +39,11 @@ const props = defineProps({
     },
     defaultValues : {
         type: Object,
+    },
+    product: {
+        type: Object,
+        required: false,
+        default : null,
     }
 });
 
@@ -52,6 +59,8 @@ const userObject = ref(JSON.parse(localStorage.getItem('user')));
 
 const companyObject = ref(JSON.parse(localStorage.getItem('company')));
 
+const branchObject = ref(JSON.parse(localStorage.getItem('selected_branch')));
+
 const transactionObject = reactive(props.transaction);
 
 const alphaNumeric = ref('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
@@ -59,6 +68,8 @@ const alphaNumeric = ref('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 const isCOD = ref(false);
 
 const isVAT = ref(false);
+
+const isShowProductModal = ref(false);
 
 const change = computed(() => transactionObject.amt_received - amount_payable.value);
 
@@ -71,6 +82,14 @@ const productsError = ref([]);
 const currentCashBalance = ref (parseFloat(0));
 
 const createdBy = ref (transactionObject.createdBy ? transactionObject.createdBy : userObject);
+
+let selectedProductObject = ref({
+    product_name : '',
+    product_desc : '',
+    product_code : '-',
+    user_id : userObject.value.id,
+    company_id : companyObject.value.id,
+});
 
 const amount_payable = computed(()=>{
     if (transactionObject.item_transaction_type == 'DELIVERY' || transactionObject.item_transaction_type == 'STOCK OUT') {
@@ -117,14 +136,25 @@ const changeUnit = (i) => {
     computeTotals();
 }
 
+const onSavePriceList = (product) => {
+    let selectedProductIndex = transactionDetails.findIndex(x=>x.product_code == product.product_code);   
+    let selectedProduct = transactionDetails[selectedProductIndex]
+    //let priceList = product.pricelist.find(x => x.is_default);
+    //console.log('selectedProduct', selectedProduct.product.p) 
+    onSelectProduct({
+        index: selectedProductIndex,
+        item: selectedProduct.product.p,
+        pricelist: true
+    });
+}
+
 const onSelectProduct = async (params) => {
     var prod = await getProduct(params.item.id)
         prod = prod.data;
-
     let indexItem = params.index;
     let indexSimilarProduct = transactionDetails.findIndex(x=>x.product_code == params.item.product_code);    
 
-    if (indexSimilarProduct > -1) {
+    if (indexSimilarProduct > -1 && !params.pricelist) {
         transactionDetails[indexSimilarProduct].quantity++;
         indexItem = indexSimilarProduct;
         transactionDetails.splice(params.index, 1)
@@ -136,6 +166,7 @@ const onSelectProduct = async (params) => {
     };
 
     transactionDetails[indexItem]['product_code'] = prod.product_code
+    transactionDetails[indexItem]['product_name'] = prod.product_name
     transactionDetails[indexItem].product_id = prod.id;
 
     if(prod.pricelist.length == 0) {
@@ -301,7 +332,6 @@ const removeItem = (transactionDetailIndex) => {
 
 const save = async ( ) => {
     tDetails()
-    console.log('userObject.value.designation ',transactionObject.item_transaction_type, userObject.value.designation)
     if (productsError.value.length > 0) {
         alertBox(productsError.value, ALERT_TYPE.ERR);
         productsError.value = [];
@@ -352,6 +382,7 @@ const save = async ( ) => {
         });
 
         transaction.data.res['isUpdate'] = !isUpdate.value;
+        transaction.data.res['td'] = transactionDetails
         transactionObject.value = transaction.data.res;
         alertBox('Transaction success!', ALERT_TYPE.MSG);
         emit('onAddTransaction', transaction.data.res); 
@@ -388,6 +419,24 @@ const openNewCustomer = () => {
         'senior_citizen_no' : '',
         'address' : '',
     })
+}
+
+const showProductModal =  async ( product ) => {
+    if(typeof product == 'object') {
+        let productRes = await getProduct (product.id);
+        selectedProductObject.value = productRes.data;
+        selectedProductObject.value ['transactions'] = product.transactions;
+    } else {
+        selectedProductObject.value = {
+            product_name : '',
+            product_desc : '',
+            product_code : '-',
+            user_id : userObject.value.id,
+            company_id : companyObject.value.id,
+        };
+    }
+
+    isShowProductModal.value = !isShowProductModal.value;
 }
 
 watch(
@@ -444,8 +493,24 @@ watch(
 
 onMounted(async ()=>{
     // onmounted hook
-    //console.log('transactionObject', transactionObject)
+    // console.log('transactionObject', transactionObject)
     // transactionDetails = props.transaction.item_details;
+    if (props.product) {
+        console.log('props.product', props.product)
+        let lt = props.product.transactions[0];
+        let pl = props.product.pricelist.find(x=>x.is_default === true);
+        let unit_obj = lt ? pl.unit.find(x=>x.unit_name === lt.unit) : pl.unit.find(x=>x.heirarchy === pl.unit.length);
+        props.product['unit_obj'] = unit_obj;
+        props.product['remaining_balance'] = lt ? lt.remaining_balance : 0;
+        isUpdate.value = false;
+        addItem();
+        onSelectProduct({
+            index: 0,
+            item: props.product,
+            pricelist: true
+        });
+     }
+
     if(!transactionObject.id) {
         transactionObject.transaction_code = 
         `${transactionObject.item_transaction_type[0]}-${companyObject.value.company_code}-${randomString(15, alphaNumeric.value)}`;
@@ -481,6 +546,19 @@ onUnmounted(()=>{
 
 </script>
 <template>
+    <Modal 
+        :show=isShowProductModal 
+        @close="showProductModal" 
+        @onDialogDisplay='()=>{}'
+    >
+        <ProductModal 
+            :productObject="selectedProductObject" 
+            :branchObject="branchObject"
+            :activeTab=2
+            @closeProductModal="showProductModal" 
+            @onAddProduct='onSavePriceList'
+        />
+    </Modal>
     <div id="modal-title">
         <div style="float:left">
             <b>{{title}}</b>
@@ -514,7 +592,7 @@ onUnmounted(()=>{
                     style="width:90%;"
                 />
             </div>
-            <div style="width:33.33%;float:left;;">
+            <div style="width:33.33%;float:left;">
                 <B>TRANSACTION TYPE</B>
                 <select :disabled="isUpdate" v-model="transactionObject.item_transaction_type" style="width:100%;">
                     <option v-for="(t, index) in itemTransactionTypes" :key="index" :value="index">
@@ -527,7 +605,7 @@ onUnmounted(()=>{
 
         <div style="background-color: #f0534017; width:100%; height:65%; margin-top:1%; padding:1%;" >
             <div style="width:100%;height:10%;">
-                <div style='float:left; width:20%;'>
+                <div style='float:left; width:20%;' v-if="!product">
                     <PrimaryButton :additionalStyles="'background: green;'" @click=addItem>+ ADD ITEM</PrimaryButton>
                 </div>
             </div>
@@ -569,12 +647,15 @@ onUnmounted(()=>{
                 >
                     <div style="float:left; width:20%; padding:1%;">
                         <TextAutoComplete 
+                            v-if="!product"
                             :getData="getProducts1" 
                             itemName="product_name" 
+                            :fieldNames="['product_name', 'remaining_balance,unit_name', 'price']"
                             :itmName="transactionDetail.pp ? transactionDetail.pp.product_name : ''" 
                             :itemIndex="transactionDetailIndex"
                             @onSelectItem="onSelectProduct"
                         />
+                        <span v-else style="text-transform: uppercase">{{ transactionDetail.product_name }}</span>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
                         <input v-model="transactionDetail.quantity"
@@ -603,7 +684,7 @@ onUnmounted(()=>{
                             </option>
                         </select>
                     </div>
-                    <div style="float:left; width:10%; padding:1%;">
+                    <div style="float:left; width:10%; padding:1%;cursor:pointer;">
                         <input  v-model="transactionDetail.price_per_unit" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
@@ -619,7 +700,17 @@ onUnmounted(()=>{
                         <input disabled v-model="transactionDetail.remaining_balance" type="text" style="width:100%;"/>
                     </div>
                     <div style="float:left; width:5%; padding:1%;"> 
-                        <PrimaryButton additionalStyles="background:#f05340;" @click=removeItem(transactionDetailIndex)>X</PrimaryButton>
+                        <PrimaryButton 
+                            additionalStyles="background:#f05340;" 
+                            @click=removeItem(transactionDetailIndex)
+                        >
+                            X
+                        </PrimaryButton>
+                        <PrimaryButton v-if='transactionDetail.product'
+                            additionalStyles="background:#f05340;" 
+                            @click=showProductModal(transactionDetail.product.p)
+                        > Price List
+                        </PrimaryButton>
                     </div>
                     <div style="clear:both"></div>
                 </div>
@@ -745,6 +836,6 @@ onUnmounted(()=>{
 }
 
 .price-list-container .unit-table thead tr th {
-    text-align: left;;
+    text-align: left;
 }
 </style>

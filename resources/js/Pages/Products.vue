@@ -106,13 +106,20 @@ const catchChangeBranch = async (branch) => {
 }
 
 const onAddProduct = (product) => {
+    if (product.isUpdateQty) {
+        let indx = resultData.value.data.findIndex(x => x.product_code == product.product_code)
+        if (indx > -1)
+            resultData.value.data[indx]['remaining_balance'] = product.remaining_balance;
+        return;
+    }
+
     if (product.isUpdate) {
         resultData.value.unshift(product);
     } else {
         // update product
-        let indx = resultData.value.findIndex(x => x.id == product.id)
+        let indx = resultData.value.data.findIndex(x => x.id == product.id)
         if (indx > -1)
-            resultData.value[indx] = product;
+            resultData.value.data[indx] = product;
     }
 }
 
@@ -192,8 +199,17 @@ const tableHeaders = ref([
 <template>
     <Head title="Dashboard" />
     <AppLayout :catchChangeBranch="catchChangeBranch">
-        <Modal :show=isShowProductModal @close="showProductModal" @onDialogDisplay="onOpenProductDialog">
-            <ProductModal :productObject="productObject" :branchObject="branchObject" @closeProductModal="showProductModal" @onAddProduct=onAddProduct />
+        <Modal 
+            :show=isShowProductModal 
+            @close="showProductModal" 
+            @onDialogDisplay="onOpenProductDialog"
+        >
+            <ProductModal 
+                :productObject="productObject" 
+                :branchObject="branchObject"
+                @closeProductModal="showProductModal" 
+                @onAddProduct=onAddProduct 
+            />
         </Modal>
 
         <div style="background: #F05340;padding:1%; color:#fff;">

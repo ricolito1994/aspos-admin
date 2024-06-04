@@ -1,6 +1,8 @@
 <script setup>
 import {event} from '@/Services/EventBus';
 import { 
+    reactive,
+    computed,
     onMounted, 
     onUnmounted, 
     ref,
@@ -18,6 +20,10 @@ const props = defineProps({
     itemIndex : {
         type: Number,
         default: 0,
+    },
+    fieldNames : {
+        type: Array,
+        required: true,
     },
     itmName : {
         type: String,
@@ -50,6 +56,18 @@ const searchString = ref(props.itmName);
 const emit = defineEmits(['onSelectItem']);
 
 const isLoading = ref (true);
+
+const widthItemsResults = computed(() => {
+    console.log((props.fieldNames))
+    if(props.fieldNames)
+        return 100 / props.fieldNames.length;
+    return 1
+})
+
+const resultsStyleItem = reactive({
+    float: 'left',
+    width: `${widthItemsResults.value}%`
+});
 
 const searchItems = async (event) => {
     isLoading.value = true;
@@ -160,7 +178,7 @@ onUnmounted(() => {
         />
         <div id="result-pane" class="scrollbar" v-if="showResults" ref="dropdownResultsRef">
             <div v-if="isLoading">
-                <span>Loading ...</span>
+                <span>Loading ... </span>
             </div>
             <div v-if="(results.length > 0 && searchString !== '') && !isLoading">
                 <div 
@@ -169,8 +187,21 @@ onUnmounted(() => {
                     :key="index" 
                     :id="`res-${index}`" 
                     @click="selectItem(index)"
-                >
-                    {{ result[itemName] }}
+                    style="width:100%;"
+                >   
+                    <div 
+                        v-if="fieldNames" 
+                        v-for="(r, i) in fieldNames" 
+                        :style="resultsStyleItem"
+                    >
+                        <span v-for="(r1, i1) in r.split(',')">
+                            {{ result[r1] }}
+                        </span>
+                    </div>
+                    <div v-else>
+                        {{ result[itemName] }}
+                    </div>
+                    <div style="clear:both"></div>
                 </div>
             </div>
             <div v-else-if="!isLoading">

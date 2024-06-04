@@ -10,19 +10,35 @@ import {
     alertBox,
     ALERT_TYPE
 } from '@/Services/Alert';
+import {
+    TRANSACTION_MODAL_CONSTANTS,
+    IS_VAT,
+    VAT_PERCENT,
+    ALPHA_NUMERIC,
+    USER_ROLES,
+} from '@/Constants'
 import { saveProduct } from '@/Services/ServerRequests';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DataTable from '@/Components/DataTable.vue';
-
+import Modal from '@/Components/Modal.vue';
+import TransactionModal from '@/Components/TransactionModal.vue';
+import moment from 'moment';
 const props = defineProps({
     productObject : {
         type: Object,
     },
     branchObject : {
         type: Object,
+    },
+    activeTab: {
+        type: Number,
+        default: 0,
     }
 });
-
+const currentDate = moment().format('YYYY-MM-DD');
+const nextMonth = moment().format('YYYY-MM-DD');
+const transactionDateFrom = ref(currentDate);
+const transactionDateTo = ref(nextMonth);
 const userObject = ref(JSON.parse(localStorage.getItem('user')));
 const companyObject = reactive(JSON.parse(localStorage.getItem('company')));
 const product = reactive(props.productObject);
@@ -31,7 +47,33 @@ const defaultProdMenu = ref(0);
 const alphaNumeric = ref('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ');
 const title = ref('')
 const isUpdate = ref(false);
-
+const isOpenTransactionModal = ref(false);
+const productTransactions = ref([])
+const transaction = ref({
+    transaction_code : '',
+    item_transaction_type : 'DELIVERY',
+    transaction_type: TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.value,
+    stock : true,
+    transaction_desc: 'a transaction',
+    transaction_date : currentDate,
+    total_price : parseFloat(0.0),
+    total_cost : parseFloat(0.0),
+    supplier_id : 0,
+    branch_id : branch.id,
+    user_id : userObject.value.id,
+    company_id : companyObject.id,
+    amt_received: 0.00,
+    final_amt_received: 0.00,
+    discount_type: 1,
+    discount_percent: 0,
+    vat: IS_VAT ? VAT_PERCENT : 0,
+    customer_id : null,
+    amt_released : null,
+    change : 0.00,
+    ref_transaction_id: null,
+    is_expense: null,
+    requested_by: null,
+})
 let priceList = reactive([
     {
         pricelist_name: 'DEFAULT PRICE',
@@ -156,11 +198,10 @@ const genarateProductCode = () => {
 }
 
 const prodMenuSelect = (index) => {
-    if (index == 2 && product.transactions.length == 0) {
+    /*if (index == 2 && product.transactions.length == 0) {
         alertBox ("No transactions present.", ALERT_TYPE.MSG);
         return;
-    }
-    
+    }*/
     defaultProdMenu.value = index;
 }
 
@@ -210,9 +251,37 @@ const setToDefaultPrice = (priceIndex) => {
     }
 }
 
+const openTransaction = () => {
+    isOpenTransactionModal.value = !isOpenTransactionModal.value;
+}
+
+const onUpdateQuantityByTransaction = (transactionData) => {
+    let selproduct = transactionData.td.find (x => x.product_code === product.product_code)
+    console.log('selproduct', selproduct)
+    productTransactions.value.unshift({
+        id : transactionData.id,
+        created_at : transactionData.created_at,
+        transaction_type : transactionData.transaction_type,
+        stock : transactionData.stock ? 1 : 0,
+        unit : selproduct.unit,
+        quantity : selproduct.quantity,
+        remaining_balance : selproduct.remaining_balance
+    })
+    emit('onAddProduct', {
+        product_code : product.product_code,
+        remaining_balance:  selproduct.remaining_balance,
+        isUpdateQty: true,
+    })
+    //save();
+    //console.log('transactionData', transactionData)
+}
+
 
 onMounted (() => {
     isUpdate.value = !product.id ? true : false;
+
+    if (props.activeTab > 0) 
+        prodMenuSelect(props.activeTab - 1)
 
     if (!product.id) {
         product.product_code = genarateProductCode()
@@ -220,9 +289,10 @@ onMounted (() => {
     } else {
         // update/edit product mode
         
-        console.log(product)
+        // console.log(product)
         title.value = product.product_name;
         priceList = product.pricelist
+        productTransactions.value = product.transactions
     }
 });
 
@@ -236,6 +306,20 @@ watch (priceList, (oldval, newval) => {
 
 </script>
 <template>
+    <Modal 
+        :show=isOpenTransactionModal 
+        @close="openTransaction" 
+        @onDialogDisplay="null" 
+        extraWidth="max-width:90rem"
+    >
+        <TransactionModal 
+            :transaction="transaction" 
+            :branchObject="branch" 
+            :product="product"
+            @closeTransactionModal="openTransaction"
+            @onAddTransaction="onUpdateQuantityByTransaction"
+        />
+    </Modal>
     <div id="modal-title">
         <div style="float:left">
             <b>{{title}}</b>
@@ -247,9 +331,27 @@ watch (priceList, (oldval, newval) => {
     </div>
     <div id="modal-content">
         <div id="product-menu">
-            <PrimaryButton :additionalStyles="defaultProdMenu == 0 ? 'background: #f05340' : ''" @click=prodMenuSelect(0)>PRODUCT DETAILS</PrimaryButton>&nbsp;
-            <PrimaryButton :additionalStyles="defaultProdMenu == 1 ? 'background: #f05340' : ''" @click=prodMenuSelect(1)>PRICE LIST</PrimaryButton>&nbsp;
-            <PrimaryButton v-if="!isUpdate" :additionalStyles="defaultProdMenu == 2 ? 'background: #f05340' : ''" @click=prodMenuSelect(2)>TRANSACTIONS</PrimaryButton>
+            <PrimaryButton 
+                v-if="(activeTab == 0 || activeTab == 1)" 
+                :additionalStyles="defaultProdMenu == 0 ? 'background: #f05340' : ''"
+                @click=prodMenuSelect(0)
+            >
+                PRODUCT DETAILS
+            </PrimaryButton>&nbsp;
+            <PrimaryButton 
+                v-if="(activeTab == 0 || activeTab == 2)" 
+                :additionalStyles="defaultProdMenu == 1 ? 'background: #f05340' : ''"
+                @click=prodMenuSelect(1)
+            >
+                PRICE LIST
+            </PrimaryButton>&nbsp;
+            <PrimaryButton 
+                v-if="!isUpdate && (activeTab == 0 || activeTab == 3)" 
+                :additionalStyles="defaultProdMenu == 2 ? 'background: #f05340' : ''" 
+                @click=prodMenuSelect(2)
+            >
+                TRANSACTIONS
+            </PrimaryButton>
         </div>
         <div class="prod-m-main-form" v-if="defaultProdMenu == 0">
             <div style="width:100%;">
@@ -374,11 +476,20 @@ watch (priceList, (oldval, newval) => {
             </div>
         </div>
         <div class="prod-m-main-form" v-if="defaultProdMenu == 2">
-            <div>
-                Transactions at: <b>{{ branchObject.branch_name }}</b>
+            <div style="width:100%;">
+                <div style="width:50%; float:left;">
+                    Transactions at: <b>{{ branchObject.branch_name }}</b>
+                </div>
+                <div style="width:50%; float:right;">
+                    <PrimaryButton :additionalStyles="'background: #f05340'" @click=openTransaction(1)>
+                        + New Transaction
+                    </PrimaryButton>
+                </div>
+                <div style="clear:both"></div>
             </div>
             <div>
-                <DataTable :tableHeaders="tableHeaders" :resultData="product.transactions" />
+                <br>
+                <DataTable :tableHeaders="tableHeaders" :resultData="productTransactions" />
             </div>
         </div>
     </div>
