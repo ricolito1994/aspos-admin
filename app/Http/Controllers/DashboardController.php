@@ -11,7 +11,7 @@ class DashboardController extends Controller
         $user = session('user_object');
         return Inertia::render('Dashboard', [
             "user" => $user,
-            "company" => $user->company,
+            "company" => $user?->company,
         ]);
     }
 }

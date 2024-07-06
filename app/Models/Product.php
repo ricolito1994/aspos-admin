@@ -44,8 +44,39 @@ class Product extends Model
         return $this->hasMany('App\Models\TransactionDetail', 'product_id', 'id');
     }
 
+    public function latestPendingTransaction () 
+    {
+        return $this->hasMany('App\Models\TransactionDetail', 'product_id', 'id');
+    }
+
+    public function latestTransaction () 
+    {
+        return $this->hasMany('App\Models\TransactionDetail', 'product_id', 'id');
+    }
+
+
     public function user () 
     {
         return $this->hasMany('App\Models\User', 'id', 'user_id');
+    }
+
+    public function scopeLatestPendingTransaction ($query) 
+    {
+        return $query->with('latestPendingTransaction', function ($qTransaction) {
+            $qTransaction
+                ->orderBy('created_at', 'desc')
+                ->whereNotNull('is_pending_transaction')
+                ->first();
+        });
+    }
+
+    public function scopeLatestTransaction ($query) 
+    {
+        return $query->with('latestTransaction', function ($qTransaction) {
+            $qTransaction
+                ->orderBy('created_at', 'desc')
+                ->whereNull('is_pending_transaction')
+                ->first();
+        });
     }
 }

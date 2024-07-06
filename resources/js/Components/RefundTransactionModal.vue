@@ -143,7 +143,7 @@ const save = async () => {
 
             transactionObject.transaction_type = props.type.value;
             transactionObject.transaction_date = currentDate.value;
-            
+            transactionObject.transaction_code = `${transactionObject.transaction_code}-REF`
             isUpdate.value = !isUpdate.value;
             //console.log(transactionObject, transactionDetails.value)
             let transaction = await saveTransaction({
@@ -157,7 +157,7 @@ const save = async () => {
 
             alertBox('Transaction success!', ALERT_TYPE.MSG);
             emit('onAddTransaction', transaction.data.res);
-            
+            closeTModal();
 
         } catch (e) {
             alertBox(e.response.data.err ? e.response.data.err : e.response.data.message, 
@@ -199,10 +199,17 @@ const searchTransactions = (index, searchString) => {
     })
 }
 
-
 const onSelectTransaction = (selectedTransaction) => {
+    // console.log(selectedTransaction)
     selectedTransaction = selectedTransaction.item ? selectedTransaction.item : selectedTransaction; 
-
+    if(selectedTransaction.is_pending_transaction==1) {
+        alertBox('Cannot refund a pending transaction.', ALERT_TYPE.ERR)
+        return;
+    }
+    /*if(selectedTransaction?.item_transaction_type!=='SALE') {
+        alertBox('Only a sale can be refunded.', ALERT_TYPE.ERR)
+        return;
+    }*/
     if (selectedTransaction.item) {
         let msg = `This transaction is already referenced to another transaction. Cannot select this transaction.`;
         if (selectedTransaction.ref_transaction_id) {
@@ -253,10 +260,11 @@ const onSelectTransaction = (selectedTransaction) => {
         let selUnits = product.unit;
         let selectedUnit = selUnits.find(x => x.heirarchy === sel.unit_id);
         //console.log('selectedUnit.unit_name', selectedUnit.unit_name)
+        //console.log('selectedTransaction.ref_transaction', selectedTransaction.ref_transaction)
         selectedTransaction.item_details[i]['units'] = selUnits;
         selectedTransaction.item_details[i]['unit'] = selectedUnit.unit_name;
         selectedTransaction.item_details[i]['old_qty'] = 
-            parseFloat(selectedTransaction.ref_transaction ? selectedTransaction.ref_transaction.item_details[i].quantity : sel.quantity);
+           parseFloat(selectedTransaction.ref_transaction ? selectedTransaction.ref_transaction.item_details[i].quantity : sel.quantity);
         selectedTransaction.item_details[i]['stock'] = transactionObject.stock;
         selectedTransaction.item_details[i]['quantity'] = sel.quantity;
         selectedTransaction.item_details[i]['latest_rem_bal_unit_name'] = latestUnitName;
@@ -315,7 +323,7 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         remainingBalance = parseFloat(latestRemainingBalance) - convertedQuantity;
         totalAmountRefund.value += newCost;
     }
-
+console.log('transactionObject.item_details[transactionIndex].old_qty', transactionObject.item_details[transactionIndex].old_qty)
     let errMsg2 = `${productName} quantity must not be greater than the ordered quantity.`;
     if (convertedQuantity > transactionObject.item_details[transactionIndex].old_qty) {
         if (!errors.value.find(x=>x === errMsg2)) errors.value.push(errMsg2);

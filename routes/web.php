@@ -32,7 +32,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/products', [ProductController::class, 'index'])
         ->name('products');
     Route::get('/products/get/{companyId}/{searchString?}', [ProductController::class, 'getProducts'])
-        ->name('products.get');
+        ->name('products.get')
+        ->where('searchString', '.*');
     Route::get('/product/get/{productId}', [ProductController::class, 'getProduct'])
         ->name('product.get');
     Route::delete('/product/delete/{productId}', [ProductController::class, 'delete'])
@@ -48,7 +49,7 @@ Route::middleware('auth')->group(function () {
         ->name('transaction.get');
     Route::get('/transaction/search/{searchString}/{companyId}/{branchId}/{userId?}', [TransactionsController::class, 'searchTransaction'])
         ->name('transaction.search');
-    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom?}/{transTo?}/{userId?}', 
+    Route::get('/transactions/get/{companyId}/{branchId}/{searchString?}/{transFrom?}/{transTo?}/{userId?}/{searchType?}', 
         [TransactionsController::class, 'getTransactions'])->name('transactions.get');
     Route::post('/transaction/save', [TransactionsController::class, 'createTransaction'])
         ->name('transaction.save');

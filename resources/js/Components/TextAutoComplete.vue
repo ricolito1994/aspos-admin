@@ -78,7 +78,7 @@ const searchItems = async (event) => {
     if(event.keyCode !== 38 &&  event.keyCode !== 40) {
         searchString.value = searchString.value.toUpperCase();
         currentIndex.value = -1;
-        let res = await props.getData(1, searchString.value)
+        let res = await props.getData(1, encodeURIComponent(searchString.value))
         isLoading.value = false;
         let r = res.data.res ? res.data.res : res.data;
         if (r.data) {
@@ -166,7 +166,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div @keydown="navResultList" style="width:100%;z-index:9999">
+    <div @keydown="navResultList" style="width:100%;position: relative;">
         <input 
             type="text"
             class="uppercase"
@@ -221,10 +221,12 @@ onUnmounted(() => {
 <style scoped>
 #result-pane {
     position: absolute;
+    left: 0;
+    right: 0;
     background-color: #fff;
     padding: 1%;
     border:1px solid #ccc;
-    width:50%;
+    width:500px;
     max-height: 300px;
     overflow-y: auto;
     z-index: 9999;

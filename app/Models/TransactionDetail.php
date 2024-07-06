@@ -31,6 +31,8 @@ class TransactionDetail extends Model
         'company_id',
         'supplier',
         'stock', // 1 for in, 0 for out
+        'is_pending_transaction',
+        'is_done_pending_transaction'
     ];
 
     protected $dates = ['deleted_at'];

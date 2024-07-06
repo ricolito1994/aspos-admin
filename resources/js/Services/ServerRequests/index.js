@@ -167,6 +167,7 @@ export function getTransactions (
     transFrom, 
     transTo,
     userId,
+    searchType,
 ) {
     //searchString = searchString ? searchString : false;
     //let urlStr = userId ? `${host}/transactions/get/${company_id}/${branch_id}/${searchString}/${transFrom}/${transTo}/${userId}` :
@@ -181,8 +182,8 @@ export function getTransactions (
     paramlist += searchString ? `${searchString}/` : 'false/';
     paramlist += transFrom ? `${transFrom}/` : '';
     paramlist += transTo ? `${transTo}/` : '';
-    paramlist += userId ? `${userId}` : '';
-
+    paramlist += userId ? `${userId}/` : '';
+    paramlist += searchType ? `${searchType}` : '';
     let productsRequest = axiosLoading.get(`${urlStr}${paramlist}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {

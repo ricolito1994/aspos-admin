@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Pricelist;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\PendingTransaction;
 
 use DB;
 
@@ -37,7 +38,7 @@ class TransactionsController extends Controller
     public function createTransaction (Request $request) 
     {
         // create | update transactions
-        DB::beginTransaction();
+        //DB::beginTransaction();
 
         try {
             
@@ -86,10 +87,23 @@ class TransactionsController extends Controller
                     'transaction_code' => $transactionData['transaction_code'],
                 ], $transactionData);
             }
-            DB::commit();
+            if (isset($transactionData['ref_transaction_id']) && $transactionData['item_transaction_type'] === "SALE") {
+                $doneTransaction = Transaction::updateOrCreate([
+                    'id' => $transactionData['ref_transaction_id'],
+                ], [
+                    'is_done_pending_transaction' => true
+                ]);
+                
+                TransactionDetail::updateOrCreate(
+                    ['transaction_id' => $transactionData['ref_transaction_id']],
+                    ['is_done_pending_transaction' => true]
+                );
+                
+            }
+            //DB::commit();
             return response()->json(['res' => $transaction], 200);
         } catch (Exception $e) {
-            DB::rollBack();
+            //DB::rollBack();
             return response()->json(['err'=>$e], 500);
         }
         
@@ -102,6 +116,7 @@ class TransactionsController extends Controller
         $transDateFrom = null, 
         $transDateTo = null,
         $userId = null,
+        $searchType = 'ALL',
     ) {
         // get many transactions
         try {
@@ -109,25 +124,57 @@ class TransactionsController extends Controller
                 ['company_id', $companyId],
                 ['branch_id', $branchId]
             ];
+            if (isset($userId) && !is_numeric($userId)) {
+                $searchType = $userId;
+            }
+
+            switch ($searchType) {
+                case "SALE":
+                    $conds[] = ['item_transaction_type', 'SALE'];
+                    $conds[] = ['is_pending_transaction', null];
+                    break;
+                case "REFUND":
+                    $conds[] = ['item_transaction_type', '-'];
+                    break;
+                case "DELIVERY":
+                    $conds[] = ['item_transaction_type', 'DELIVERY'];
+                    break;
+                case "PENDING":
+                    $conds[] = ['is_pending_transaction', 1];
+                    break;
+                case "ALL":
+                    //$conds[] = ['item_transaction_type', "LIKE", "%%"];
+                    $conds[] = ['is_pending_transaction', null];
+                    break;
+                default:
+                    $conds[] = ['is_pending_transaction', null];
+                    break;
+            }
 
             if ($searchString != 'false') $conds[] = ['transaction_code', 'LIKE', "%$searchString%"];
-            if ($userId) $conds[] = ['user_id', $userId];
-               
-            $transactions = Transaction::where ($conds)
-                    ->with('customer')
-                    ->with('createdBy')
-                    ->with('requestedBy')
-                    ->orderBy('id', 'DESC')
-                    ->paginate(10);
-            
+            if (isset($userId) && is_numeric($userId)) {
+                $conds[] = ['user_id', $userId];
+            }
+            //var_dump($conds);
             if ($transDateFrom && $transDateTo) {
                 $transactions = Transaction::where ($conds)
                     ->whereBetween('transaction_date', [$transDateFrom, $transDateTo])
+                    //->whereNull('is_pending_transaction')
                     ->with('customer')
                     ->with('createdBy')
                     ->with('requestedBy')
                     ->orderBy('id', 'DESC')
                     ->paginate(10);
+            } else {
+                   
+                $transactions = Transaction::where ($conds)
+                    //->whereNull('is_pending_transaction')
+                    ->with('customer')
+                    ->with('createdBy')
+                    ->with('requestedBy')
+                    ->orderBy('id', 'DESC')
+                    ->paginate(10);
+    
             }
             
             return response()->json(['res' => $transactions], 200);
@@ -147,7 +194,6 @@ class TransactionsController extends Controller
     {
         // get many transactions
         try {
-           
             
             $conds =  [
                 ['company_id', $companyId],
@@ -164,10 +210,12 @@ class TransactionsController extends Controller
                 ->with('customer')
                 ->with('createdBy')
                 ->with('requestedBy')
-                ->with('itemDetails', function ($q) {
-                    $q->with('unit');
-                    $q->with('product', function ($q){
+                ->with('itemDetails', function ($qt) {
+                    $qt->with('unit');
+                    $qt->with('product', function ($q) use ($qt) {
                         $q->with('unit');
+                        $q->latestTransaction();
+                        $q->latestPendingTransaction();
                     });
                 })
                 ->with('refTransaction', function ($q) {
@@ -176,20 +224,25 @@ class TransactionsController extends Controller
                     });
                 })
                 ->orderBy('id', 'ASC')
-                ->get();
+                ->paginate(10);
                 if (count($transactions) > 0) {
-                    for ($i = 0 ; $i < count($transactions[0]->itemDetails); $i++) {
-                        $transactionDetail = $transactions[0]->itemDetails[$i];
-
-                        $rembal = TransactionDetail::where(function($q) use ($transactionDetail){
-                            $product_id=$transactionDetail->product_id;
-                            $q->whereRaw("id = (SELECT max(id) from transaction_details where product_id=$product_id)");
-                            $q->where("product_id", $product_id);
-                        })
-                        ->first();
-                        $transactionDetail['latest_rem_bal_qty'] = $rembal->remaining_balance;
-                        $transactionDetail['latest_rem_bal_unit'] = $rembal->unit_id;
-                        $transactions[0]->itemDetails[$i] = $transactionDetail;
+                    for ($h = 0; $h < count($transactions); $h++) {
+                        for ($i = 0 ; $i < count($transactions[$h]->itemDetails); $i++) {
+                            $transactionDetail = $transactions[$h]->itemDetails[$i];
+                           
+                            $rembal = TransactionDetail::where(function($q) use ($transactionDetail){
+                                $product_id=$transactionDetail->product_id;
+                                if(!isset($product_id)) {
+                                  return;
+                                }
+                                $q->whereRaw("id = (SELECT max(id) from transaction_details where product_id=$product_id and is_pending_transaction IS NULL)");
+                                $q->where("product_id", $product_id);
+                            })
+                            ->first();
+                            $transactionDetail['latest_rem_bal_qty'] = $rembal->remaining_balance;
+                            $transactionDetail['latest_rem_bal_unit'] = $rembal->unit_id;
+                            $transactions[$h]->itemDetails[$i] = $transactionDetail;
+                        }
                     }
                 }
             return response()->json(['res' => $transactions], 200);
@@ -255,6 +308,7 @@ class TransactionsController extends Controller
                 $conditions[] = ['user_id', $userId];
 
             $transaction = Transaction::where($conditions)
+                ->whereNull('is_pending_transaction')
                 ->orderBy('id', 'asc')
                 ->first();
             
@@ -282,6 +336,7 @@ class TransactionsController extends Controller
             
             $transaction = Transaction::where($conditions)
                 ->whereNotNull('remaining_balance')
+                ->whereNull('is_pending_transaction')
                 ->orderBy('id', 'desc')
                 ->first();
             return response()->json(['res' => $transaction], 200);
@@ -312,6 +367,7 @@ class TransactionsController extends Controller
                 $conditions[] = ['user_id', $userId];
 
             $transaction = Transaction::where($conditions)
+                ->whereNull('is_pending_transaction')
                 ->orderBy('id', 'desc')
                 ->get();
             foreach($transaction as $t) {

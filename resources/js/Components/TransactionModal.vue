@@ -5,14 +5,16 @@ import {
     ref, 
     reactive, 
     watch, 
-    computed 
+    computed ,
+    getCurrentInstance
 } from 'vue';
 import { 
     getProducts1, 
     getProduct, 
     saveTransaction, 
     getCustomers,
-    getCurrentBalance
+    getCurrentBalance,
+    searchTransaction
 } from '@/Services/ServerRequests';
 import {
     TRANSACTION_MODAL_CONSTANTS,
@@ -44,7 +46,15 @@ const props = defineProps({
         type: Object,
         required: false,
         default : null,
-    }
+    },
+    userDesignation: {
+        type: Boolean,
+        required: false,
+    },
+    isNotFromDialog: {
+        type: Boolean,
+        required: false,
+    },
 });
 
 let transactionDetails = reactive (props.transaction.id ? props.transaction.item_details : []);
@@ -90,6 +100,22 @@ let selectedProductObject = ref({
     user_id : userObject.value.id,
     company_id : companyObject.value.id,
 });
+
+const searchTransactions = (index, searchString) => {
+    return new Promise ( async (resolve, reject) => {
+        try {
+            let transactions = await searchTransaction (
+                searchString,
+                companyObject.value.id,
+                branchObject.value.id
+            );
+            resolve (transactions)
+        } catch (e) {
+            reject (e);
+        }
+    })
+}
+
 
 const amount_payable = computed(()=>{
     if (transactionObject.item_transaction_type == 'DELIVERY' || transactionObject.item_transaction_type == 'STOCK OUT') {
@@ -148,6 +174,17 @@ const onSavePriceList = (product) => {
     });
 }
 
+const onSelectItem = (params) => {
+    addItem();
+    setTimeout(() => {
+        onSelectProduct({
+            index : transactionDetails.length - 1,
+            item : params.item,
+            pricelist: true
+        })
+    },100);
+}
+
 const onSelectProduct = async (params) => {
     var prod = await getProduct(params.item.id)
         prod = prod.data;
@@ -194,7 +231,9 @@ const onSelectProduct = async (params) => {
 }
 
 const convertQuantities = (i) => {
-    let p = transactionDetails[i].product;
+    let p = transactionDetails[i].product; console.log('p', p)
+    //console.log('is_pending_transaction', is_pending_transaction)
+   
     if (!p) return;
     let remBal = parseFloat(p.p.remaining_balance);
     
@@ -234,9 +273,11 @@ const convertQuantities = (i) => {
     let selectedProductUnits = defaultPriceList.unit;
 
     let selUnit = selectedProductUnits.find(x => x.heirarchy === transactionDetails[i].unit_id)
+    
+    let heirarchy = p.p.unit_obj ? p.p.unit_obj.heirarchy : 0
 
-    let j = p.p.unit_obj.heirarchy - 1;
-    let cdn = selUnit.heirarchy >= p.p.unit_obj.heirarchy;
+    let j = heirarchy - 1;
+    let cdn = selUnit.heirarchy >= heirarchy;
     let ctr =  selUnit.heirarchy - 1 ;
   
     while ( cdn ? ctr >= j : ctr <= j ) {
@@ -250,7 +291,7 @@ const convertQuantities = (i) => {
             j--;
         } else {
             
-            if (sUnit.heirarchy == p.p.unit_obj.heirarchy) {
+            if (sUnit.heirarchy == heirarchy) {
                 remBal = p.p.remaining_balance;
             } else {
                 remBal *= parseFloat(sUnit.parent_quantity);
@@ -270,11 +311,13 @@ const convertQuantities = (i) => {
         !transactionObject.stock ? 
         parseFloat(remBal) - parseFloat(transactionDetails[i].quantity): // if stock out (ransactionObject.stock == false), deduct to remaining balance
         parseFloat(remBal) + parseFloat(transactionDetails[i].quantity); // if stock in (ransactionObject.stock == true), add to remaining balance
-
+        
     if (remainingBalance >= 0) {
         let errmsg = `${p.p.product_name} remaining balance is negative`;
         let errIndx = productsError.value.find(x => x === errmsg);
-        transactionDetails[i].remaining_balance = parseFloat(remainingBalance);
+        //if (!transactionDetails[i].is_pending_transaction)
+            transactionDetails[i].remaining_balance = parseFloat(remainingBalance);
+        //else transactionDetails[i].remaining_balance = 0
         if (errIndx > -1) productsError.value.splice(errIndx, 1)
     } else {
         let errmsg = `${p.p.product_name} remaining balance is negative`;
@@ -318,6 +361,7 @@ const addItem = () => {
         'supplier' : 0,
         'stock' : transactionObject.stock,
         'indx' : randomString(15, alphaNumeric.value),
+        'is_pending_transaction' : props.transaction.is_pending_transaction
     })
 }
 
@@ -349,7 +393,7 @@ const save = async ( ) => {
     }
 
     if (transactionObject.item_transaction_type=='DELIVERY' && userObject.value.designation != 1) {
-        alertBox('Your designation cant add products.', ALERT_TYPE.ERR);
+        alertBox('Your designation cannot add products.', ALERT_TYPE.ERR);
         return;
     }
 
@@ -374,7 +418,7 @@ const save = async ( ) => {
         }
 
         transactionObject.transaction_code = transactionObject.transaction_code.toUpperCase();
-
+        // console.log('transactionObject', transactionObject, transactionDetails)
         let transaction = await saveTransaction({
             transaction: transactionObject,
             transactionDetails: transactionDetails,
@@ -385,12 +429,21 @@ const save = async ( ) => {
         transaction.data.res['td'] = transactionDetails
         transactionObject.value = transaction.data.res;
         alertBox('Transaction success!', ALERT_TYPE.MSG);
-        emit('onAddTransaction', transaction.data.res); 
+        emit('onAddTransaction', transaction.data.res);
         
         if (!isUpdate.value) isUpdate.value = true;
+
+        if (props.isNotFromDialog) {
+            await clearItemDetails();
+        }
+
     } catch (e) {
+        if (e.response) {
         alertBox(e.response.data.err ? e.response.data.err : e.response.data.message, 
             ALERT_TYPE.ERR);
+        } else {
+            console.log(e)
+        }
     }
 }
 
@@ -407,6 +460,25 @@ const tDetails = () => {
     for (let i in transactionDetails) {
         convertQuantities(i);
     }
+}
+
+const clearItemDetails = () => {
+    return new Promise ( (resolve, reject) => {
+        let intervals = []
+        for (let i in transactionDetails) {
+            intervals[i] = setInterval(()=>{
+                transactionDetails.splice(i, 1)
+                computeTotals(false)
+            }, 100)
+        }
+        setTimeout( () => {
+            for (let i in intervals) 
+                clearInterval(intervals[i])
+            transactionObject['ref_transaction_id'] = null;
+            resolve();
+        }, 300);
+        init();
+    });
 }
 
 const openNewCustomer = () => {
@@ -439,13 +511,90 @@ const showProductModal =  async ( product ) => {
     isShowProductModal.value = !isShowProductModal.value;
 }
 
+const onSelectTransaction = async (selectedTransaction) => {
+
+    if (selectedTransaction.item.item_transaction_type !== 'SALE') { 
+        alertBox("Only sales transaction is allowed.", ALERT_TYPE.ERR);
+        return;
+    }
+    
+    if (!selectedTransaction.item.is_pending_transaction) {
+        alertBox("We only process pending transactions.", ALERT_TYPE.ERR);
+        return;
+    }
+
+    if (selectedTransaction.item.is_done_pending_transaction) {
+        alertBox("This transaction is already done.", ALERT_TYPE.ERR);
+        return;
+    }
+
+    // console.log('selectedTransaction', selectedTransaction)
+    await clearItemDetails();
+    // console.log(selectedTransaction.item)
+    //await getCustomers1(branchObject.branch_id,)
+    // for (let i in selectedTransaction.item) {
+        // if(transactionObject[i] && selectedTransaction.item[i]) {
+            /*if (i === 'transaction_code') transactionObject[i] = `${selectedTransaction.item[i]}-FINAL`
+            else if (i === 'transaction_date' | i === 'created_at') continue
+            else if(transactionObject[i] && selectedTransaction.item[i])*/
+        //    transactionObject[i] = selectedTransaction.item[i];
+        // }
+    // }
+    
+    // transactionObject = {...selectedTransaction.item}
+    // let intervals = []
+    setTimeout(async ()=> {
+        for (let i in selectedTransaction.item.item_details) {
+            let product = selectedTransaction.item.item_details[i].product
+            let prd = await getProducts1(branchObject.value.id, product.product_code)
+            //console.log('prd', prd)
+            //intervals[i] = setInterval(()=>{
+            selectedTransaction.item.item_details[i]['is_pending_transaction'] = null
+            transactionDetails.push(selectedTransaction.item.item_details[i])
+            onSelectProduct({
+                index: i,
+                item: prd.data.data[0],
+                pricelist: true
+            }); 
+            //}, 100)
+        }
+        // transactionObject['ref_transaction_id'] = selectedTransaction.item['id']
+        transactionObject['amt_received'] = selectedTransaction.item['amt_received']
+        transactionObject['transaction_code'] = selectedTransaction.item['transaction_code'].replace('TEMP', 'FINAL')
+        transactionObject['user_id'] = userObject.value.id
+        transactionObject['is_pending_transaction'] = null
+        transactionObject['is_done_pending_transaction'] = null
+    });
+    //setTimeout( () => {
+    //    for (let i in intervals)
+    //        clearInterval(intervals[i])
+    //}, 1000);
+   // transactionDetails = selectedTransaction.item.item_details
+    
+
+    if (transactionObject['amt_received']) {
+    //    transactionObject['amt_released'] = transactionObject['amt_received'];
+    } else {
+    //    transactionObject['amt_received'] = transactionObject['amt_released'];
+    }
+
+}
+
+watch (
+    ()=> props.transaction.is_pending_transaction,
+    async (newVal) => {
+        if(newVal == null) return;
+        await clearItemDetails();
+    }
+)
+
 watch(
     () => transactionObject.item_transaction_type, 
     (newVal) => {   
         isVAT.value = false;
         transactionObject.stock = itemTransactionTypes[newVal].stock;
         customerType.value = ((newVal == 'DELIVERY') ? 2 : 1);
-        console.log(newVal)
+        //console.log(newVal)
         if (newVal == 'STOCK OUT') transactionObject.amt_released = null;
         transactionObject.customer_id = '';
         event.emit('TextAutoCompleteComponent:clearSearchText', "customer_name");
@@ -483,7 +632,12 @@ watch(
 
 watch(
     () => transactionObject.item_transaction_type,
-    (newVal)=>{
+    (newVal, oldVal)=>{
+        if (newVal !== 'SALE' && props.isNotFromDialog) {
+            transactionObject.item_transaction_type = 'SALE';
+            alertBox("Only sales transactions allowed.", ALERT_TYPE.ERR)
+            //return;
+        }
         if(!transactionObject.id) {
             let tcsplit = transactionObject.transaction_code.split('-');
             transactionObject.transaction_code = `${newVal[0]}-${tcsplit[1]}-${tcsplit[2]}`;
@@ -491,12 +645,8 @@ watch(
     }
 )
 
-onMounted(async ()=>{
-    // onmounted hook
-    // console.log('transactionObject', transactionObject)
-    // transactionDetails = props.transaction.item_details;
+const init = async () => {
     if (props.product) {
-        console.log('props.product', props.product)
         let lt = props.product.transactions[0];
         let pl = props.product.pricelist.find(x=>x.is_default === true);
         let unit_obj = lt ? pl.unit.find(x=>x.unit_name === lt.unit) : pl.unit.find(x=>x.heirarchy === pl.unit.length);
@@ -512,8 +662,10 @@ onMounted(async ()=>{
      }
 
     if(!transactionObject.id) {
+        let temp = !transactionObject['is_pending_transaction'] ? "" : 'TEMP-';
+        let tdate = transactionObject.transaction_date.replace(/-/g, "")
         transactionObject.transaction_code = 
-        `${transactionObject.item_transaction_type[0]}-${companyObject.value.company_code}-${randomString(15, alphaNumeric.value)}`;
+        `${temp}${transactionObject.item_transaction_type}-${tdate}-${randomString(4, alphaNumeric.value)}`;
     }
 
     let latestTransaction = await getCurrentBalance(
@@ -530,6 +682,17 @@ onMounted(async ()=>{
     isUpdate.value = !props.transaction.id ? false : true;
     transactionObject.final_amt_received = amount_payable;
     transactionObject.change = change;
+
+    transactionObject.user_id = !transactionObject.user_id ? userObject.value.id : transactionObject?.user_id
+    
+    console.log('init', userObject.value.id)
+}
+
+onMounted( ()=>{
+    // onmounted hook
+    // console.log('transactionObject', transactionObject)
+    // transactionDetails = props.transaction.item_details;
+    init();
 })
 
 onUnmounted(()=>{
@@ -583,12 +746,33 @@ onUnmounted(()=>{
                 />
             </div>
             <div style="width:33.33%;float:left; ">
-                <B>TRANSACTION CODE</B>
-                <input 
+                <B v-if="!transaction.is_pending_transaction && isNotFromDialog">TRANSACTION CODE</B>
+                <B v-else>PRODUCT CODE</B>
+                <TextAutoComplete 
+                    v-if="!transaction.is_pending_transaction && isNotFromDialog"
+                    :itmName="transactionObject.transaction_code" 
+                    :getData="searchTransactions" 
+                    :itemName="'transaction_code'" 
+                    :itemIndex="0"
+                    :style="'width:90%'"
+                    @onSelectItem="onSelectTransaction"
+                />
+                <!---<input 
+                    v-else
                     class="uppercase"
                     :disabled="isUpdate" 
                     type="text" 
                     v-model="transactionObject.transaction_code" 
+                    style="width:90%;"
+                />--> 
+                <TextAutoComplete 
+                    v-else
+                    :getData="getProducts1" 
+                    itemName="product_name" 
+                    :fieldNames="['product_name', 'remaining_balance,unit_name', 'price']"
+                    :itmName="transactionObject.transaction_code" 
+                    :itemIndex="0"
+                    @onSelectItem="onSelectItem" 
                     style="width:90%;"
                 />
             </div>
@@ -604,12 +788,12 @@ onUnmounted(()=>{
         </div>
 
         <div style="background-color: #f0534017; width:100%; height:65%; margin-top:1%; padding:1%;" >
-            <div style="width:100%;height:10%;">
+           <!-- <div style="width:100%;height:10%;">
                 <div style='float:left; width:20%;' v-if="!product">
                     <PrimaryButton :additionalStyles="'background: green;'" @click=addItem>+ ADD ITEM</PrimaryButton>
                 </div>
-            </div>
-            <div class="scrollbar" style="width:100%;max-width:150%;height:75%;max-height:75%; overflow:auto;">
+            </div>-->
+            <div class="scrollbar" style="width:100%;max-width:150%;height:80%;max-height:80%; overflow:auto;">
                 <div style="width:100%;">
                     <div style="float:left; width:20%; padding:1%;">
                         Product Name
@@ -646,7 +830,7 @@ onUnmounted(()=>{
                     style="width:100%;"
                 >
                     <div style="float:left; width:20%; padding:1%;">
-                        <TextAutoComplete 
+                        <!--<TextAutoComplete 
                             v-if="!product"
                             :getData="getProducts1" 
                             itemName="product_name" 
@@ -654,10 +838,13 @@ onUnmounted(()=>{
                             :itmName="transactionDetail.pp ? transactionDetail.pp.product_name : ''" 
                             :itemIndex="transactionDetailIndex"
                             @onSelectItem="onSelectProduct"
-                        />
-                        <span v-else style="text-transform: uppercase">{{ transactionDetail.product_name }}</span>
+                        />-->
+                        <input v-if="transactionDetail.pp" type ='text' style="text-transform: uppercase; width: 100%;" v-model="transactionDetail.pp.product_name" disabled/>
+                        <input v-else type ='text' style="text-transform: uppercase; width: 100%;" v-model="transactionDetail.product_name" disabled/>
+                        <a href="javascript:void(0);" @click=showProductModal(transactionDetail.product.p) >Price List</a>
                     </div>
                     <div style="float:left; width:10%; padding:1%;">
+                       
                         <input v-model="transactionDetail.quantity"
                             @keyup="changeQuantity(transactionDetailIndex)" 
                             type="text" 
@@ -706,16 +893,16 @@ onUnmounted(()=>{
                         >
                             X
                         </PrimaryButton>
-                        <PrimaryButton v-if='transactionDetail.product'
+                        <!--<PrimaryButton v-if='transactionDetail.product'
                             additionalStyles="background:#f05340;" 
                             @click=showProductModal(transactionDetail.product.p)
                         > Price List
-                        </PrimaryButton>
+                        </PrimaryButton>--> 
                     </div>
                     <div style="clear:both"></div>
                 </div>
             </div>
-            <div style="width:100%;height:10%;">
+            <div style="width:100%;height:10%;padding-top:1%;">
                 <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
                     Total Price <input type="text" v-model="transactionObject.total_price" />
                 </div>
@@ -755,12 +942,23 @@ onUnmounted(()=>{
                 </div>
                 <div 
                     v-if="transactionObject.item_transaction_type == 'SALE'" 
-                    style='float:left; padding-top: 0.5%; width:25%; padding-left: 25px; cursor: pointer;'
+                    style='float:left; padding-top: 0.5%; width:10%; padding-left: 0px; cursor: pointer;'
                 >
                    <br> 
                    <input type="checkbox" v-model="isVAT"  id="is_vat" /> &nbsp;
                    <label style="cursor: pointer;" :for="`is_vat`" >
-                        <b>IS Vattable {{ VAT_PERCENT * 100 }}%</b>
+                        <b>Vat {{ VAT_PERCENT * 100 }}%</b>
+                    </label>&nbsp;
+                </div>
+                <div 
+                    v-if="userDesignation" 
+                    style='float:left; padding-top: 0.5%; width:10%; padding-left: 0px; cursor: pointer;'
+                >
+                   <br> 
+                   <input v-if="userDesignation == 3" type="checkbox" v-model="transaction.is_pending_transaction"  id="is_temp" /> &nbsp;
+                   <input v-else type="checkbox" v-model="transaction.is_pending_transaction"  id="is_temp" disabled /> &nbsp;
+                   <label style="cursor: pointer;" :for="`is_temp`" >
+                        <b>Temp</b>
                     </label>&nbsp;
                 </div>
             </div>
@@ -784,6 +982,10 @@ onUnmounted(()=>{
                 <div>
                     <B>DATE</B>
                     <input disabled v-model="transactionObject.transaction_date" type="date" style="width:100%;"/>
+                </div>
+                <div v-if="transaction.is_pending_transaction | !isNotFromDialog" style="margin-top:2%;">
+                    <B>TRANSACTION CODE</B>
+                    <input v-model="transactionObject.transaction_code" type="text" style="width:100%;"/>
                 </div>
             </div>
         </div>

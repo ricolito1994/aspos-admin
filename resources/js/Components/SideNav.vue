@@ -21,7 +21,7 @@ const activePage = ref(route().current());
                 <li><SideNavLink :link="'Dashboard'"    :isActive="activePage == 'dashboard' || !activePage" :route="route('dashboard')"></SideNavLink></li>
                 <li><SideNavLink :link="'Products'"     :isActive="activePage == 'products'" :route="route('products')"></SideNavLink></li>
                 <li><SideNavLink :link="'Transactions'" :isActive="activePage == 'transactions'" :route="route('transactions')"></SideNavLink></li>
-                <li><SideNavLink :link="'Settings'"     :isActive="activePage == 'settings'" :route="route('settings')"></SideNavLink></li>
+                <!--<li><SideNavLink :link="'Settings'"     :isActive="activePage == 'settings'" :route="route('settings')"></SideNavLink></li>-->
             </ul>
         </div>
     </div>

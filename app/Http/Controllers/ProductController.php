@@ -138,7 +138,10 @@ class ProductController extends Controller
 
             $products
                 ->with('transactions', function($query) use ($user) {
-                    $query->with('transaction');
+                    $query->with('transaction', function ($q) {
+                        $q->whereNull('is_pending_transaction');
+                    });
+                    $query->whereNull('is_pending_transaction');
                     $query->where('branch_id', $user->selected_branch);
                     $query->orderBy('id', 'DESC');
                     //$query->max('id');
@@ -201,6 +204,7 @@ class ProductController extends Controller
                     $query->whereNull('deleted_at');
                 },
                 'transactions' => function ($query) {
+                    $query->whereNull('is_pending_transaction');
                     $query->orderBy('created_at');
                 }
             ])

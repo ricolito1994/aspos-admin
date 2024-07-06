@@ -62,6 +62,7 @@ const nextMonth = moment().format('YYYY-MM-DD');
 
 const resultData = ref([]);
 const searchString = ref("");
+const searchType = ref("ALL");
 const transactionDateFrom = ref(currentDate);
 const transactionDateTo = ref(nextMonth);
 
@@ -153,6 +154,11 @@ const onSelectUser = (user) => {
 }
 
 onMounted ( () => {
+    if(userObject.value.designation == 1) {
+        searchTransactions(true)
+        return;
+    }
+
     loadTransactions();
 })
 
@@ -170,6 +176,7 @@ const loadTransactions = async () => {
         transactionDateFrom.value,
         transactionDateTo.value,
         searchUser.value.id,
+        searchType.value,
     );
     resultData.value = transaction.data.res;
     loadBalances();
@@ -215,14 +222,18 @@ const onAddTransaction = (transaction) => {
 
 const searchTransactions = async ( reset ) => {
     if(typeof reset == "boolean") {
+        if (searchUser.designation !== 1) {
+            alertBox("Cannot reset search.", ALERT_TYPE.ERR)
+            return;
+        }
         searchString.value = "";
         transactionDateFrom.value = currentDate;
         transactionDateTo.value = nextMonth;
         searchUser.value = tmpUserObject.designation == 1 ? tmpUserObject : {};
         searchUser.value = {};
+        searchType.value = "ALL";
         event.emit('TextAutoCompleteComponent:clearSearchText', "name");
     }
-   
     let transactions = await getTransactions(
         companyObject.value.id, 
         branchObject.value.id,
@@ -230,6 +241,7 @@ const searchTransactions = async ( reset ) => {
         transactionDateFrom.value, 
         transactionDateFrom.value,
         searchUser.value.id,
+        searchType.value,
     );
     resultData.value = transactions.data.res;
     loadBalances();
@@ -614,7 +626,14 @@ const tableHeaders = ref([
                 <b>SEARCH</b>
             </div>
             <div style="width:15%; float:left;">
-                <input placeholder="Transaction Code" v-model="searchString" @change="searchTransactions" type="text" style="width:100%;margin-left:1%;"/>
+                <!--<input placeholder="Transaction Code" v-model="searchString" @change="searchTransactions" type="text" style="width:100%;margin-left:1%;"/>-->
+                <select v-model="searchType" @change=searchTransactions style="width:100%;margin-left:1%;">
+                    <option value='ALL'>All</option>
+                    <option value='SALE'>Sale</option>
+                    <option value='DELIVERY'>Delivery</option>
+                    <option value='PENDING'>Pending Transaction</option>
+                    <option value='REFUND'>Refund</option>
+                </select>
             </div>
             <div style="width:6%; float:left;padding-top:0.5%;padding-left:2%;">
                 <b>USER</b>

@@ -39,6 +39,8 @@ class Transaction extends Model
         'ref_transaction_id',
         'remaining_balance',
         'is_expense',
+        'is_pending_transaction',
+        'is_done_pending_transaction',
         'requested_by',
     ];
 
