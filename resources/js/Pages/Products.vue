@@ -7,6 +7,7 @@ import {
 } from 'vue';
 import { 
     getProducts, 
+    getProducts1,
     getProduct,
     deleteProduct,
     providePaginationData
@@ -140,13 +141,14 @@ const onOpenProductDialog = ( ) => {
 
 
 const tableHeaders = ref([
-    {
+    /*{
         name : 'PRODUCT CODE',
         style: 'width:300px',
         field : 'product_code',
-    },
+    },*/
     {
         name : 'PRODUCT NAME',
+        style: 'width:500px',
         field : 'product_name',
     },
     {
@@ -185,11 +187,11 @@ const tableHeaders = ref([
                 label : 'View',
                 func : showProductModal
             },
-            delete : {
+           /* delete : {
                 color : '#f05340',
                 label : 'delete',
                 func : deleteProductItem
-            },
+            },*/
         }
     }
 ]);

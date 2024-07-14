@@ -38,10 +38,8 @@ class TransactionsController extends Controller
     public function createTransaction (Request $request) 
     {
         // create | update transactions
-        //DB::beginTransaction();
-
         try {
-            
+            DB::beginTransaction();
             $req = $request->all();
 
             $validate = Validator::make($req['transaction'],
@@ -59,7 +57,6 @@ class TransactionsController extends Controller
             
             $transactionData = $req['transaction'];
             $transactionDetails = $req['transactionDetails'];
-
             $omitsToTransaction = [
                 'units',
                 'product',
@@ -87,23 +84,24 @@ class TransactionsController extends Controller
                     'transaction_code' => $transactionData['transaction_code'],
                 ], $transactionData);
             }
-            if (isset($transactionData['ref_transaction_id']) && $transactionData['item_transaction_type'] === "SALE") {
-                $doneTransaction = Transaction::updateOrCreate([
-                    'id' => $transactionData['ref_transaction_id'],
+            if (isset($transactionData['ref_transaction_id_'])) {
+                Transaction::updateOrCreate([
+                    'id' => $transactionData['ref_transaction_id_'],
                 ], [
-                    'is_done_pending_transaction' => true
+                    'is_done_pending_transaction' => true,
+                    'ref_transaction_id' => $transaction->id
                 ]);
                 
                 TransactionDetail::updateOrCreate(
-                    ['transaction_id' => $transactionData['ref_transaction_id']],
+                    ['transaction_id' => $transactionData['ref_transaction_id_']],
                     ['is_done_pending_transaction' => true]
                 );
                 
             }
-            //DB::commit();
+            DB::commit();
             return response()->json(['res' => $transaction], 200);
         } catch (Exception $e) {
-            //DB::rollBack();
+            DB::rollBack();
             return response()->json(['err'=>$e], 500);
         }
         
@@ -141,6 +139,7 @@ class TransactionsController extends Controller
                     break;
                 case "PENDING":
                     $conds[] = ['is_pending_transaction', 1];
+                    $conds[] = ['is_done_pending_transaction', null];
                     break;
                 case "ALL":
                     //$conds[] = ['item_transaction_type', "LIKE", "%%"];
@@ -163,6 +162,7 @@ class TransactionsController extends Controller
                     ->with('customer')
                     ->with('createdBy')
                     ->with('requestedBy')
+                    ->with('itemDetails')
                     ->orderBy('id', 'DESC')
                     ->paginate(10);
             } else {
@@ -172,6 +172,7 @@ class TransactionsController extends Controller
                     ->with('customer')
                     ->with('createdBy')
                     ->with('requestedBy')
+                    ->with('itemDetails')
                     ->orderBy('id', 'DESC')
                     ->paginate(10);
     

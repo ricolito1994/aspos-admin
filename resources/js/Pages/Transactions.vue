@@ -222,7 +222,7 @@ const onAddTransaction = (transaction) => {
 
 const searchTransactions = async ( reset ) => {
     if(typeof reset == "boolean") {
-        if (searchUser.designation !== 1) {
+        if (searchUser.value.designation != 1) {
             alertBox("Cannot reset search.", ALERT_TYPE.ERR)
             return;
         }

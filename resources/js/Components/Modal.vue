@@ -119,3 +119,28 @@ const maxWidthClass = computed(() => {
         </transition>
     </teleport>
 </template>
+<style>
+#modal-content, #modal-title, #modal-footer {
+    padding: 1.7%;
+}
+
+#modal-title {
+    background-color: #f05340;
+    color: #fff;
+}
+
+#modal-content {
+    height:60vh;
+}
+
+#modal-content > .prod-m-main-form {
+    padding-top:20px;
+    padding-bottom:20px;
+    overflow:auto;
+    max-height: 49vh;
+}
+
+#modal-footer {
+    border-top:1px solid #ccc;
+}
+</style>

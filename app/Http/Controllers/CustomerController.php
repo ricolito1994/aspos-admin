@@ -70,8 +70,8 @@ class CustomerController extends Controller
                         $q->orWhere('customer_code', 'LIKE', "%$searchString%");
                         $q->orWhere('customer_name', 'LIKE', "%$searchString%");
                     })
-                    ->where('company_id', $companyId)
-                    ->where('customer_type', $customerType);
+                    ->where('company_id', $companyId);
+                    //->where('customer_type', $customerType);
             }
             
             $customerRes = $customers->orderBy('id', 'DESC')->get();

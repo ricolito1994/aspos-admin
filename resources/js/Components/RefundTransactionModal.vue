@@ -471,28 +471,28 @@ onUnmounted(() => {
             <div style="background-color: #f0534017; width:100%; height:65%; margin-top:1%; padding:0.5%;" >
                 <div class="scrollbar" style="width:100%;max-width:150%;height:85%;max-height:85%; overflow:auto;">
                     <div style="width:100%;height:15%;">
-                        <div style="float:left; width:35%; padding:1%;">
+                        <div style="float:left; width:35%; padding:0.5%;">
                             Product Name
                         </div>
-                        <div style="float:left; width:10%; padding:1%;">
+                        <div style="float:left; width:10%; padding:0.5%;">
                             Ordered Qty
                         </div>
-                        <div style="float:left; width:10%; padding:1%;">
+                        <div style="float:left; width:10%; padding:0.5%;">
                             New Qty
                         </div>
-                        <div style="float:left; width:15%; padding:1%;">
+                        <div style="float:left; width:15%; padding:0.5%;">
                             Unit
                         </div>
                         <div 
                             v-if="defaultStock == 1" 
-                            style="float:left; width:15%; padding:1%;"
+                            style="float:left; width:15%; padding:0.5%;"
                         >
                             Total Cost
                         </div>
-                        <div v-else style="float:left; width:15%; padding:1%;">
+                        <div v-else style="float:left; width:15%; padding:0.5%;">
                             Total Price
                         </div>
-                        <div style="float:left; width:15%; padding:1%;">
+                        <div style="float:left; width:15%; padding:0.5%;">
                             Balance
                         </div>
                         
@@ -503,11 +503,11 @@ onUnmounted(() => {
                         v-bind:key="transactionDetail.indx" 
                         style="width:100%;"
                     >
-                        <div style="float:left; width:35%; padding:1%;">
+                        <div style="float:left; width:35%; ">
                             <input v-if="transactionDetail.product" disabled type="text" v-model="transactionDetail.product.product_name" style="width:100%;"/>
                             <input v-else disabled type="text" v-model="transactionDetail.pp.product_name" style="width:100%;"/>
                         </div>
-                        <div style="float:left; width:10%; padding:1%;">
+                        <div style="float:left; width:10%; ">
                             <input 
                                 disabled
                                 type="text" 
@@ -515,7 +515,7 @@ onUnmounted(() => {
                                 v-model="transactionDetail.old_qty"
                             />
                         </div>
-                        <div style="float:left; width:10%; padding:1%;">
+                        <div style="float:left; width:10%; ">
                             <input 
                                 v-model="transactionDetail.quantity"
                                 @keyup="changeQuantity(transactionDetailIndex)"
@@ -523,20 +523,20 @@ onUnmounted(() => {
                                 type="text"
                             />
                         </div>
-                        <div style="float:left; width:15%; padding:1%;"> 
+                        <div style="float:left; width:15%; "> 
                             <select disabled v-model="transactionDetail.unit_id" type="text" style="width:99%;">
                                 <option v-for="(unit, uIndex) in transactionDetail.units" :key="uIndex" :value="unit.heirarchy">
                                     {{ unit.unit_name }}
                                 </option>
                             </select>
                         </div>
-                        <div v-if="defaultStock == 1" style="float:left; width:15%; padding:1%;">
+                        <div v-if="defaultStock == 1" style="float:left; width:15%; ">
                             <input disabled v-model="transactionDetail.total_cost" type="text" style="width:100%;"/>
                         </div>
-                        <div v-else style="float:left; width:15%; padding:1%;">
+                        <div v-else style="float:left; width:15%; ">
                             <input disabled v-model="transactionDetail.total_price" type="text" style="width:100%;"/>
                         </div>
-                        <div style="float:left; width:15%; padding:1%;">
+                        <div style="float:left; width:15%; ">
                             <input disabled v-model="transactionDetail.remaining_balance" type="text" style="width:50%;"/> 
                             &nbsp;<b>{{ transactionDetail.latest_rem_bal_unit_name }}</b>
                         </div>

@@ -148,6 +148,7 @@ class ProductController extends Controller
                 })
                 ->with('pricelist', function($query) use ($user) {
                     $query->with('unit', function ($q) {
+                        $q->where('is_default', 1);
                         $q->whereNull('deleted_at');
                     });
                     $query->where('is_default', 1);
@@ -166,6 +167,7 @@ class ProductController extends Controller
 
                 if (count($p['transactions']) > 0) {
                     $unit = Unit::where([
+                        ['product_id', $p['transactions'][0]['product_id']],
                         ['heirarchy', $p['transactions'][0]['unit_id']],
                         ['branch_id', $user->selected_branch],
                     ])->first();
@@ -180,7 +182,8 @@ class ProductController extends Controller
                     $unitRemainingBal = $unit ? $unit->unit_name : '-';
                     $unit_obj = $unit ? $unit : [];
                 } 
-                $ppunit = (isset($unit_obj['price_per_unit']) ? $unit_obj['price_per_unit'] : '');
+                //$ppunit = (isset($unit_obj['price_per_unit']) ? $unit_obj['price_per_unit'] : '');
+                $ppunit = $p->pricelist[0]->unit[0]->price_per_unit;
                 $productsRes[$k]['remaining_balance'] = $remainingBalance;
                 $productsRes[$k]['unit_name'] = $unitRemainingBal;
                 $productsRes[$k]['unit_obj'] = $unit_obj;

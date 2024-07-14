@@ -1,4 +1,5 @@
 <script setup>
+import {watch} from 'vue';
 import {event} from '@/Services/EventBus';
 import { 
     reactive,
@@ -51,14 +52,16 @@ const showResults = ref(false);
 
 let results = ref([]);
 
-const searchString = ref(props.itmName);
+let searchString = reactive(props.itmName);
+
+const refSearchString = ref(null)
 
 const emit = defineEmits(['onSelectItem']);
 
 const isLoading = ref (true);
 
 const widthItemsResults = computed(() => {
-    console.log((props.fieldNames))
+    // console.log((props.fieldNames))
     if(props.fieldNames)
         return 100 / props.fieldNames.length;
     return 1
@@ -76,9 +79,9 @@ const searchItems = async (event) => {
         showResults.value = true;
     
     if(event.keyCode !== 38 &&  event.keyCode !== 40) {
-        searchString.value = searchString.value.toUpperCase();
+        searchString = searchString.toUpperCase();
         currentIndex.value = -1;
-        let res = await props.getData(1, encodeURIComponent(searchString.value))
+        let res = await props.getData(1, encodeURIComponent(searchString))
         isLoading.value = false;
         let r = res.data.res ? res.data.res : res.data;
         if (r.data) {
@@ -121,7 +124,7 @@ const selectItem = (index) => {
 
     if(typeof index !== 'undefined') currentIndex.value = index; 
     currentItem.value = results.value[currentIndex.value];
-    searchString.value = currentItem.value[props.itemName];
+    searchString = currentItem.value[props.itemName];
     emit ('onSelectItem', {
         item: currentItem.value,
         index: props.itemIndex,
@@ -138,10 +141,10 @@ const navigateItems = (scroll) => {
         currentIndex.value ++;
     }
 
-    searchString.value = 
+    searchString = 
         results.value[currentIndex.value] ? results.value[currentIndex.value][props.itemName] : '';
 
-        searchString.value = searchString.value.toUpperCase();
+        searchString = searchString.toUpperCase();
     //var scrollAmount = dropdownResultsRef.value.clientHeight * scroll;
     const itemHeight = dropdownResultsRef.value.querySelector('.results').clientHeight;
     const scrollAmount = itemHeight * scroll;
@@ -152,22 +155,44 @@ const navigateItems = (scroll) => {
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
     event.on('TextAutoCompleteComponent:clearSearchText', (modelName) => {
-        if (props.itemName == modelName) searchString.value = "";
+        if (props.itemName == modelName) { 
+            searchString = "";
+            setTimeout( () => {
+                console.log(document.getElementById(`searchTextBox-${props.itemName}`))
+                document.getElementById(`searchTextBox-${props.itemName}`).focus();
+            },100);
+        }
     });
     event.on('TextAutoCompleteComponent:reset', (modelName) => {
-        if (props.itemName == modelName) searchString.value = searchItmNameTmp;
+        if (props.itemName == modelName) searchString = searchItmNameTmp;
     });
+    //event.on('TextAutoCompleteComponent:focus', (modelName) => {
+        //if (props.itemName == modelName) {
+            //console.log('searchString', searchString)
+            //refSearchString.value.focus()
+            //console.log('modelName', modelName)
+            setTimeout( () => {
+                document.getElementById(`searchTextBox-${props.itemName}`).focus();
+                //refSearchString.value.focus()
+            },100);
+        //}
+    //});
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
 });
 
+watch (() => props.itmName, (newVal) => {
+    searchString = props.itmName
+})
+
 </script>
 
 <template>
     <div @keydown="navResultList" style="width:100%;position: relative;">
         <input 
+            :id="`searchTextBox-${itemName}`"
             type="text"
             class="uppercase"
             label="INPUT YOUR TEXT HERE..."
@@ -175,6 +200,7 @@ onUnmounted(() => {
             @keyup="searchItems" 
             :style="style ? style : 'width:100%;'"
             :disabled="disabled"
+            ref="refSearchString"
         />
         <div id="result-pane" class="scrollbar" v-if="showResults" ref="dropdownResultsRef">
             <div v-if="isLoading">
