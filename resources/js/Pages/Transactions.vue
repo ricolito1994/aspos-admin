@@ -309,11 +309,11 @@ const showTransactionModal = async (transactionArgument) => {
     isShowTransactionModal.value = !isShowTransactionModal.value;
 }
 
-const showRefundModal = () => {
+const showRefundModal = (transactionCode) => {
     isShowRefundModal.value = !isShowRefundModal.value;   
     if (!transaction.value.id) {
         transaction.value = {
-            transaction_code : '',
+            transaction_code : transactionCode ? transactionCode : '',
             item_transaction_type : 'DELIVERY',
             transaction_type: TRANSACTION_MODAL_CONSTANTS.ITEM_TRANSACTION.value,
             stock : true,
@@ -450,6 +450,14 @@ const toggleDisplayDropdown = ( ) => {
     displayDropdown.value = !displayDropdown.value;
 }
 
+const refundTransaction = (transaction) => {
+    if (transaction.item_transaction_type === '-' || transaction.is_pending_transaction) {
+        alertBox("Cannot refund this transaction.", ALERT_TYPE.ERR)
+        return;
+    }
+    showRefundModal(transaction.transaction_code)
+}
+
 const tableHeaders = ref([
     {
         name : 'TRANSACTION CODE',
@@ -510,6 +518,11 @@ const tableHeaders = ref([
                 label : 'X Delete',
                 func : deleteProduct
             } */
+            refund : {
+                color : 'rgb(240, 83, 64)',
+                label : 'Refund',
+                func : refundTransaction
+            }
         }
     }
 ]);

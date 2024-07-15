@@ -26,6 +26,10 @@ const props = defineProps({
         type: Array,
         required: true,
     },
+    fieldLabels : {
+        type: Array,
+        required: false,
+    },
     itmName : {
         type: String,
     },
@@ -201,12 +205,20 @@ watch (() => props.itmName, (newVal) => {
             :style="style ? style : 'width:100%;'"
             :disabled="disabled"
             ref="refSearchString"
+            autocomplete="off"
         />
         <div id="result-pane" class="scrollbar" v-if="showResults" ref="dropdownResultsRef">
             <div v-if="isLoading">
                 <span>Loading ... </span>
             </div>
             <div v-if="(results.length > 0 && searchString !== '') && !isLoading">
+                <div 
+                    v-if="fieldLabels" 
+                    v-for="(r, i) in fieldLabels" 
+                    :style="resultsStyleItem"
+                >
+                    {{ r }}
+                </div>
                 <div 
                     :class='currentIndex==index ? "results active" : "results"' 
                     v-for="(result, index) in results" 
@@ -215,6 +227,7 @@ watch (() => props.itmName, (newVal) => {
                     @click="selectItem(index)"
                     style="width:100%;"
                 >   
+                    
                     <div 
                         v-if="fieldNames" 
                         v-for="(r, i) in fieldNames" 

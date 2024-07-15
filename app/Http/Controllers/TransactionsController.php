@@ -427,4 +427,20 @@ class TransactionsController extends Controller
             return response()->json(['err'=>$e], 500); 
         }
     }
+
+    public function deleteTransaction ($transactionID) 
+    {
+        try {
+            //$user = User::where('id', Auth::id())->first();
+            $transaction = Transaction::find($transactionID);
+            if (!isset($transaction->is_pending_transaction))
+                return response()->json(['error' => 'Must be a pending transaction.'], 500);
+
+            $transaction->itemDetails()->delete();
+            $transaction->delete();
+            return response()->json(['message' => 'Transaction deleted successfully'], 200);
+        } catch (Exception $e) {
+            return response()->json(['error' => $e], 500);
+        }
+    }
 }

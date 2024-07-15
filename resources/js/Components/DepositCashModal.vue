@@ -98,6 +98,12 @@ const save = async () => {
         return;
     }
 
+    if (userObject.value.designation != 3) {
+        alertBox('Your designation cannot fo this.', ALERT_TYPE.ERR);
+        return;
+    }
+
+
     try {
         isUpdate.value = !isUpdate.value;
         props.transaction['remaining_balance'] = currentCashBalance.value;

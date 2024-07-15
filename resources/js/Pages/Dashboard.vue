@@ -58,7 +58,7 @@ const transactionObject = ref({
     ref_transaction_id: null,
     is_expense: null,
     requested_by: null,
-    is_pending_transaction: props.user.designation == 5 ? true : null
+    is_pending_transaction: (props.user.designation == 5 | props.user.designation == 1) ? true : null
 })
 
 localStorage.setItem('user', JSON.stringify(props.user));

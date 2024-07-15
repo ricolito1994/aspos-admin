@@ -97,6 +97,8 @@ const createdBy = ref (transactionObject.createdBy ? transactionObject.createdBy
 
 const isShowPendingTransactionModal = ref(false);
 
+const currentQTYindex = ref(-1)
+
 let selectedProductObject = ref({
     product_name : '',
     product_desc : '',
@@ -195,7 +197,7 @@ const onSelectProduct = async (params) => {
     let indexItem = params.index;
     let indexSimilarProduct = transactionDetails.findIndex(x=>x.product_code == params.item.product_code); 
     if (indexSimilarProduct > -1) {
-        alertBox("Item already existing on the list. Adjust the quantity instead.", ALERT_TYPE.ERR);
+        //alertBox("Item already existing on the list. Adjust the quantity instead.", ALERT_TYPE.ERR);
         transactionDetails.splice(params.index, 1)
         return;
     }
@@ -244,7 +246,8 @@ const onSelectProduct = async (params) => {
 }
 
 const convertQuantities = (i) => {
-    let p = transactionDetails[i].product; console.log('p', p)
+    let p = transactionDetails[i].product; 
+    //console.log('p', p)
     //console.log('is_pending_transaction', is_pending_transaction)
    
     if (!p) return;
@@ -384,13 +387,13 @@ const removeItem = (transactionDetailIndex) => {
         return;
     }
     transactionDetails.splice (transactionDetailIndex, 1);
+    currentQTYindex.value = transactionDetails.length - 1;
     computeTotals(true);
 }
 
 const save = async ( ) => {
     tDetails()
-    
-    console.log('transactionObject', transactionObject, transactionDetails)
+    //console.log('transactionObject', transactionObject, transactionDetails)
     if (productsError.value.length > 0) {
         alertBox(productsError.value, ALERT_TYPE.ERR);
         productsError.value = [];
@@ -431,7 +434,11 @@ const save = async ( ) => {
                 , ALERT_TYPE.ERR);
             return;
         }
+        
+        let confirm = await alertBox('Is this final?', ALERT_TYPE.CONFIRMATION);
 
+        if (!confirm) return;
+        transactionObject['user_id'] = userObject.value.id
         transactionObject.transaction_code = transactionObject.transaction_code.toUpperCase();
         let transaction = await saveTransaction({
             transaction: transactionObject,
@@ -490,6 +497,7 @@ const clearItemDetails = () => {
                 clearInterval(intervals[i])
             transactionObject['ref_transaction_id'] = null;
             event.emit('TextAutoCompleteComponent:clearSearchText', "product_name");
+            currentQTYindex.value = -1;
             resolve();
         }, 300);
         init();
@@ -584,8 +592,8 @@ const onSelectTransaction = async (selectedTransaction) => {
         transactionObject['user_id'] = userObject.value.id
         transactionObject['is_pending_transaction'] = null
         transactionObject['is_done_pending_transaction'] = null
-        transactionObject['customer_id'] = selectedTransaction.item.customer.id
-        customerNamePlacer.value = selectedTransaction.item.customer.customer_name
+        transactionObject['customer_id'] = selectedTransaction.item?.customer?.id
+        customerNamePlacer.value = selectedTransaction.item?.customer?.customer_name
     });
     //setTimeout( () => {
     //    for (let i in intervals)
@@ -605,6 +613,14 @@ const onSelectTransaction = async (selectedTransaction) => {
 const showPendingTransactionModal = () => {
     isShowPendingTransactionModal.value = !isShowPendingTransactionModal.value;
 }
+
+watch (
+    () => currentQTYindex.value,
+    (newVal) => {
+        let f = document.getElementById(`form-qty-${newVal}`)
+        if (f) f.focus()
+    }
+)
 
 watch (
     ()=> props.transaction.is_pending_transaction,
@@ -715,26 +731,70 @@ const init = async () => {
 }
 
 
-const keyBoardShortcuts = (e) => {
-    if (e.shiftKey && e.key =='F1') {
+const keyBoardShortcuts = async (e) => {
+    if (e.key =='F1') {
         if (!props.transaction.is_pending_transaction){
             showPendingTransactionModal();
         }
         e.preventDefault();
     }
-    if (e.shiftKey && e.ctrlKey && (e.key =='s' | e.key =='S')) {
+    if (e.key == 'F4') {
         //save()
         document.getElementById('save-transaction-button-1').click();
         e.preventDefault();
     }
     
-    if (e.ctrlKey && e.altKey && (e.key =='t' | e.key =='T')) {
+    if (e.key == 'F3') {
         if (userObject.value.designation != 3) {
-            alertBox("You are not allowed to switch.", ALERT_TYPE.ERR);
+            //alertBox("You are not allowed to switch.", ALERT_TYPE.ERR);
+            props.transaction.is_pending_transaction = false;
+            props.transaction.is_pending_transaction = true;
+            e.preventDefault();
             return;
         }
         props.transaction.is_pending_transaction = !props.transaction.is_pending_transaction
         // event.emit('TextAutoCompleteComponent:focus', "product_name");
+        e.preventDefault();
+    }
+
+    if (e.key == 'F2') { 
+        if (transactionDetails.length == 0) {
+            alertBox("Please chose products.");
+            return;
+        }
+
+        document.getElementById('form-amt').focus()
+        e.preventDefault();
+    }
+
+    if (e.key == 'F6') { 
+        if (transactionDetails.length > 0)
+            currentQTYindex.value ++;
+        if (currentQTYindex.value === transactionDetails.length)
+            currentQTYindex.value = 0;
+        
+        e.preventDefault();
+    }
+
+    if (e.key == 'F7') {
+        event.emit('TextAutoCompleteComponent:clearSearchText', "product_name");
+        e.preventDefault();
+    }
+
+    if (e.key == 'F8') {
+        event.emit('TextAutoCompleteComponent:clearSearchText', "customer_name");
+        e.preventDefault();
+    }
+
+    if (e.ctrlKey && (e.key === 'x' | e.key === 'X')) {
+        //console.log(`currentQTYindex.value`, currentQTYindex.value)
+        if (currentQTYindex.value < 0) return;
+        let confirm = await alertBox('Is this final ?', ALERT_TYPE.CONFIRMATION);
+
+        if (!confirm) return;
+        console.log('currentQTYindex.value', currentQTYindex.value)
+        removeItem(currentQTYindex.value)
+        currentQTYindex.value = 0;
         e.preventDefault();
     }
 }
@@ -758,7 +818,7 @@ onUnmounted(()=>{
     amount_payable.value = 0.0;
     change.value = 0.0;
     productsError.value = [];
-    window.addEventListener('keydown', keyBoardShortcuts);
+    window.removeEventListener('keydown', keyBoardShortcuts);
 })
 
 </script>
@@ -797,7 +857,7 @@ onUnmounted(()=>{
     <div id="modal-content">
         <div style="width:100%; height:10%;" >
             <div style="width:33.33%; float:left; ">
-                <B>{{ transactionObject.item_transaction_type == 'SALE' ? 'CUSTOMER NAME' : 'SUPPLIER' }}</B>
+                <B>{{ transactionObject.item_transaction_type == 'SALE' ? 'CUSTOMER NAME' : 'SUPPLIER' }} (F8)</B>
                 <TextAutoComplete 
                     :itmName="transactionObject.customer ? transactionObject.customer.customer_name : customerNamePlacer" 
                     :getData="getCustomers1" 
@@ -810,8 +870,8 @@ onUnmounted(()=>{
             </div>
             <div style="width:33.33%;float:left; ">
                 <B v-if="!transaction.is_pending_transaction && isNotFromDialog">TRANSACTION CODE</B>
-                <B v-else>PRODUCT CODE</B>
-                <a v-if="!transaction.is_pending_transaction && isNotFromDialog" href="javascript:void(0);" @click=showPendingTransactionModal >&#128221; SHIFT + F1</a>
+                <B v-else>PRODUCT CODE (F7)</B>
+                <a v-if="!transaction.is_pending_transaction && isNotFromDialog" href="javascript:void(0);" @click=showPendingTransactionModal >&#128221; F1</a>
                 <TextAutoComplete 
                     v-if="!transaction.is_pending_transaction && isNotFromDialog"
                     :itmName="transactionObject.transaction_code" 
@@ -833,7 +893,8 @@ onUnmounted(()=>{
                     v-else
                     :getData="getProducts1" 
                     itemName="product_name" 
-                    :fieldNames="['product_name', 'remaining_balance, unit_name', 'price']"
+                    :fieldNames="['product_name', 'remaining_balance,unit_name', 'price']"
+                    :fieldLabels="['Product Name', 'Balance', 'Price']"
                     :itmName="searchProductName" 
                     :itemIndex="0"
                     @onSelectItem="onSelectItem" 
@@ -863,7 +924,7 @@ onUnmounted(()=>{
                         Product Name
                     </div>
                     <div style="float:left; width:5%; padding:0.5%;">
-                        Qty
+                        Qty (F6)
                     </div>
                     <div style="float:left; width:13%; padding:0.5%;">
                         Unit
@@ -908,8 +969,8 @@ onUnmounted(()=>{
                         <a href="javascript:void(0);" @click=showProductModal(transactionDetail.product.p) >&#128221;</a>
                     </div>
                     <div style="float:left; width:5%; ">
-                       
                         <input v-model="transactionDetail.quantity"
+                            :id="`form-qty-${transactionDetailIndex}`"
                             @keyup="changeQuantity(transactionDetailIndex)" 
                             type="text" 
                             style="width:99%;"
@@ -987,7 +1048,7 @@ onUnmounted(()=>{
                     Amount Payable <input disabled type="text" v-model="transactionObject.final_amt_received" />
                 </div>
                 <div  v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
-                    Amount <input type="text" v-model="transactionObject.amt_received" />
+                    Amount (F2) <input id="form-amt" type="text" v-model="transactionObject.amt_received" />
                 </div>
                 <div v-if="transactionObject.item_transaction_type == 'SALE'" style='float:left; width:15%;'>
                     Change <input disabled type="text" v-model="change" />
@@ -1022,7 +1083,7 @@ onUnmounted(()=>{
                    <input v-if="userDesignation == 3" type="checkbox" v-model="transaction.is_pending_transaction"  id="is_temp" /> &nbsp;
                    <input v-else type="checkbox" v-model="transaction.is_pending_transaction"  id="is_temp" disabled /> &nbsp;
                    <label style="cursor: pointer;" :for="`is_temp`" >
-                        <b>Temp (ctrl + alt + t)</b>
+                        <b>Temp (F3)</b>
                     </label>&nbsp;
                 </div>
             </div>
@@ -1056,7 +1117,7 @@ onUnmounted(()=>{
     </div>
     <div id="modal-footer">
         <div style="float:right">
-            <PrimaryButton @click=save buttonID='save-transaction-button-1'>+ SAVE (ctrl + shift + s)</PrimaryButton>
+            <PrimaryButton @click=save buttonID='save-transaction-button-1'>+ SAVE (F4)</PrimaryButton>
         </div>
         <div style="clear:both"></div>
     </div>

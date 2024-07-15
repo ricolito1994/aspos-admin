@@ -102,6 +102,11 @@ const save = async () => {
         confirm = await alertBox(confirms.value, ALERT_TYPE.CONFIRMATION);
     }
 
+    if (userObject.value.designation != 3) {
+        alertBox(`Cannot refund transaction`, ALERT_TYPE.ERR);
+        return;
+    }
+
 
     if (confirm) {
         try {
@@ -225,7 +230,7 @@ const onSelectTransaction = (selectedTransaction) => {
     transactionObject.transaction_code = !selectedTransaction.ref_transaction ? randomString(15) : 
         selectedTransaction.ref_transaction.transaction_code;
     
-    console.log('selectedTransaction', transactionObject)
+    //console.log('selectedTransaction', transactionObject)
 
     if (transactionObject['amt_received']) {
         transactionObject['amt_released'] = transactionObject['amt_received'];
@@ -323,7 +328,7 @@ const changeQuantity = (transactionIndex, onSelectProduct) => {
         remainingBalance = parseFloat(latestRemainingBalance) - convertedQuantity;
         totalAmountRefund.value += newCost;
     }
-console.log('transactionObject.item_details[transactionIndex].old_qty', transactionObject.item_details[transactionIndex].old_qty)
+    //console.log('transactionObject.item_details[transactionIndex].old_qty', transactionObject.item_details[transactionIndex].old_qty)
     let errMsg2 = `${productName} quantity must not be greater than the ordered quantity.`;
     if (convertedQuantity > transactionObject.item_details[transactionIndex].old_qty) {
         if (!errors.value.find(x=>x === errMsg2)) errors.value.push(errMsg2);
@@ -376,8 +381,10 @@ const calculateTotals = (excludeIndex) => {
             let sel = transactionDetails.value[i];
             if (defaultStock.value == 0) {
                 totalAmountRefund.value += sel.total_price;
+                transactionObject['amt_released']  = totalAmountRefund.value
             } else {
                 totalAmountRefund.value += sel.total_cost;
+                transactionObject['amt_received']  = totalAmountRefund.value
             }
         }
     }
@@ -406,6 +413,11 @@ onMounted (async () => {
         transactionObject.transaction_date = transactionObject.ref_transaction.transaction_date;
         onSelectTransaction(transactionObject)
     }
+    else if (transactionObject.transaction_code !== ''){
+        let transaction = await searchTransactions(null, transactionObject.transaction_code)
+        onSelectTransaction(transaction.data.res.data[0])
+    }
+    //onSelectTransaction
 })
 
 onUnmounted(() => { 

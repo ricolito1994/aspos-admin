@@ -245,6 +245,18 @@ export function getCurrentBalance ( date, userId ) {
     })
 }
 
+export function deleteTransaction (transactionID) {
+    let deleteTransact = axiosLoading.delete(`${host}/transaction/delete/${transactionID}`, transactionID);
+    return new Promise ((resolve, reject) => {
+        deleteTransact.then(res => {
+            resolve(res)
+        })
+        .catch(err=>{
+            reject(err)
+        })
+    })
+}
+
 
 export function getStartingBalance ( date, userId ) {
 

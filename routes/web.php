@@ -61,6 +61,8 @@ Route::middleware('auth')->group(function () {
         ->name('transaction.get.totalsales');
     Route::get('/transaction/get/total/expenses/{date}/{userId?}', [TransactionsController::class, 'getTotalExpenses'])
         ->name('transaction.get.expenses');
+    Route::delete('/transaction/delete/{transactionID}', [TransactionsController::class, 'deleteTransaction'])
+        ->name('transaction.delete');
 
     Route::get('/branches', [TopnavController::class, 'getBranches'])
         ->name('branch.get');

@@ -35,13 +35,14 @@ const showAlertBox = ( messageObject ) => {
 }
 
 const actions = ( action ) => {
-    showAlertBox();
     const confirmActions = {
         OK : () => {
             event.emit("AlertBox:ok", null)
+            showAlertBox();
         },
         CANCEL : () => {
             event.emit("AlertBox:cancel", null)
+            showAlertBox();
         }
     }
     confirmActions[action]();
@@ -66,6 +67,7 @@ onUnmounted (() => {
         @onDialogDisplay="null" 
         customStyle="z-index:100"
         extraWidth="max-width:30rem;"
+        :isAlertBox="true"
     >
         <div id="modal-title">
             <div style="float:left">

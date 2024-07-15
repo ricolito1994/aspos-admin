@@ -5,6 +5,7 @@ import {
     onUnmounted, 
     watch 
 } from 'vue';
+import {event} from '@/Services/EventBus';
 
 const props = defineProps({
     show: {
@@ -26,6 +27,10 @@ const props = defineProps({
     customStyle : {
         type: String,
         default: '',
+    },
+    isAlertBox : {
+        type: Boolean,
+        default: false,
     }
 });
 
@@ -50,6 +55,11 @@ const close = () => {
 
 const closeOnEscape = (e) => {
     if (e.key === 'Escape' && props.show) {
+        event.emit("AlertBox:cancel", null)
+        close();
+    }
+    if (e.key === 'Enter' && (props.isAlertBox && props.show)) {
+        event.emit("AlertBox:ok", null)
         close();
     }
 };

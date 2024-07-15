@@ -17,7 +17,13 @@ import {
     searchTransaction,
     getUsers,
     getCurrentBalance,
+    deleteTransaction,
 } from '@/Services/ServerRequests';
+import {
+    alertBox,
+    customerModal,
+    ALERT_TYPE
+} from '@/Services/Alert'
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DataTable from '@/Components/DataTable.vue';
 import TextAutoComplete from '@/Components/TextAutoComplete.vue';
@@ -55,12 +61,20 @@ const tableHeaders = ref([
             return res.customer?.customer_name;
         }
     },
-    {
+    /*{
         name : 'STATUS',
         style: 'width:100px',
         //field : 'transaction_type',
         fxn : (res) => {
             return res['is_done_pending_transaction'] ? 'Done' : 'Pending';
+        }
+    },*/
+    {
+        name : 'AMT',
+        style: 'width:100px',
+        //field : 'transaction_type',
+        fxn : (res) => {
+            return res['final_amt_received'];
         }
     },
     {
@@ -88,11 +102,21 @@ const tableHeaders = ref([
                     });
                 },
             },
-            /*delete : {
+            delete : {
                 color : '#f05340',
                 label : 'X',
-                func : () => {}
-            }*/
+                func : async (res) => {
+                    try {
+                        let confirm = await alertBox('Is this final ?', ALERT_TYPE.CONFIRMATION);
+
+                        if (!confirm) return;
+                        await deleteTransaction(res.id)
+                        loadTransactions()
+                    } catch (e) {
+                        console.error(e)
+                    }
+                }
+            }
         }
     }
 ]);
