@@ -183,7 +183,10 @@ class ProductController extends Controller
                     $unit_obj = $unit ? $unit : [];
                 } 
                 //$ppunit = (isset($unit_obj['price_per_unit']) ? $unit_obj['price_per_unit'] : '');
-                $ppunit = $p->pricelist[0]->unit[0]->price_per_unit;
+                //$ppunit = $p->pricelist[0]->unit[0]->price_per_unit;
+                if(count($p->pricelist) > 0 && count($p->pricelist[0]->unit) > 0){
+                    $ppunit = ($p->pricelist[0]->unit[0]->price_per_unit);
+                } else $ppunit=0;
                 $productsRes[$k]['remaining_balance'] = $remainingBalance;
                 $productsRes[$k]['unit_name'] = $unitRemainingBal;
                 $productsRes[$k]['unit_obj'] = $unit_obj;

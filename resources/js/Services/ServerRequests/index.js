@@ -91,9 +91,10 @@ export function deleteProduct ( productId ) {
 }
 
 
-export function getProducts ( company_id , searchString ) {
+export function getProducts ( company_id , searchString, page = null ) {
     searchString = searchString ? searchString : false;
-    let productsRequest = axiosLoading.get(`${host}/products/get/${company_id}/${searchString}`);
+    let pageNum = page ? `?page=${page}` : ``;
+    let productsRequest = axiosLoading.get(`${host}/products/get/${company_id}/${searchString}${pageNum}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)
@@ -118,9 +119,10 @@ export function providePaginationData (url) {
 }
 
 
-export function getProducts1 ( company_id , searchString ) {
+export function getProducts1 ( company_id , searchString, page=null ) {
     searchString = searchString ? searchString : false;
-    let productsRequest = axios.get(`${host}/products/get/${company_id}/${searchString}`);
+    page = page ? `?page=${page}` : ``;
+    let productsRequest = axios.get(`${host}/products/get/${company_id}/${searchString}${page}`);
     return new Promise ((resolve, reject) => {
         productsRequest.then(res => {
             resolve(res)

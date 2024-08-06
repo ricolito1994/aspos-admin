@@ -52,6 +52,8 @@ const currentItem = ref({});
 
 const dropdownResultsRef = ref(null);
 
+const bottomObserver = ref(null);
+
 const showResults = ref(false);
 
 let results = ref([]);
@@ -63,6 +65,10 @@ const refSearchString = ref(null)
 const emit = defineEmits(['onSelectItem']);
 
 const isLoading = ref (true);
+
+const currentPage = ref(0);
+
+const isLoadingBottom = ref (false);
 
 const widthItemsResults = computed(() => {
     // console.log((props.fieldNames))
@@ -79,13 +85,15 @@ const resultsStyleItem = reactive({
 const searchItems = async (event) => {
     isLoading.value = true;
 
-    if(event.keyCode !== 13) 
+    if(event.keyCode !== 13) {
         showResults.value = true;
+    }
     
-    if(event.keyCode !== 38 &&  event.keyCode !== 40) {
+    if((event.keyCode !== 38 &&  event.keyCode !== 40)) {
         searchString = searchString.toUpperCase();
         currentIndex.value = -1;
-        let res = await props.getData(1, encodeURIComponent(searchString))
+        currentPage.value = 1;
+        let res = await props.getData(currentPage.value, encodeURIComponent(searchString))
         isLoading.value = false;
         let r = res.data.res ? res.data.res : res.data;
         if (r.data) {
@@ -97,6 +105,38 @@ const searchItems = async (event) => {
         isLoading.value = false;
     }
 }
+
+const loadMoreItems = async () => {
+    currentPage.value++;
+    let res = await props.getData(1, encodeURIComponent(searchString), currentPage.value)
+    console.log(res)
+    let r = res.data.res ? res.data.res : res.data;
+    if (r.data) {
+        results.value = [...results.value, ...r.data]
+    } else {
+        results.value = [...results.value, ...r];
+    }
+}
+
+
+const createObserver = () => {
+  const options = {
+    root: dropdownResultsRef.value,
+    rootMargin: '0px',
+    threshold: 1.0
+  };
+  
+  const observer = new IntersectionObserver(handleIntersect, options);
+  observer.observe(bottomObserver.value);
+
+  function handleIntersect(entries) {
+    if (entries[0].isIntersecting) {
+        loadMoreItems();
+    }
+  }
+
+  return observer;
+};
 
 const handleClickOutside = (event) => {
     currentIndex.value = -1;
@@ -156,6 +196,9 @@ const navigateItems = (scroll) => {
     dropdownResultsRef.value.scrollTop += scrollAmount;
 }
 
+
+let observer = null;
+
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
     event.on('TextAutoCompleteComponent:clearSearchText', (modelName) => {
@@ -181,11 +224,29 @@ onMounted(() => {
             },100);
         //}
     //});
+    //dropdownResultsRef.value.addEventListener('scroll', handleScroll);
 })
 
 onUnmounted(() => {
     document.removeEventListener('click', handleClickOutside);
+    //dropdownResultsRef.value.removeEventListener('scroll', handleScroll);
+    if (observer) {
+        observer.disconnect();
+    }
 });
+
+watch (() => showResults.value, (newVal) => {
+    console.log('newVal', newVal)
+    if (newVal) {
+        setTimeout(() => {
+            observer = createObserver();
+        },1000);
+    } else {
+        if (observer) {
+           observer.disconnect();
+        }
+    }
+})
 
 watch (() => props.itmName, (newVal) => {
     searchString = props.itmName
@@ -207,7 +268,7 @@ watch (() => props.itmName, (newVal) => {
             ref="refSearchString"
             autocomplete="off"
         />
-        <div id="result-pane" class="scrollbar" v-if="showResults" ref="dropdownResultsRef">
+        <div id="result-pane" class="scrollbar" v-if="showResults" ref="dropdownResultsRef" @scroll="handleScroll">
             <div v-if="isLoading">
                 <span>Loading ... </span>
             </div>
@@ -242,6 +303,8 @@ watch (() => props.itmName, (newVal) => {
                     </div>
                     <div style="clear:both"></div>
                 </div>
+                
+                <div ref="bottomObserver" id="btm"></div>
             </div>
             <div v-else-if="!isLoading">
                 <span>No Result</span>
