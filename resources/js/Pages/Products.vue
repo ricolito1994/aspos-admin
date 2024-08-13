@@ -187,11 +187,11 @@ const tableHeaders = ref([
                 label : 'View',
                 func : showProductModal
             },
-           /* delete : {
+            delete : {
                 color : '#f05340',
                 label : 'delete',
                 func : deleteProductItem
-            },*/
+            },
         }
     }
 ]);
