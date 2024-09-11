@@ -28,12 +28,18 @@ const props = defineProps({
     company: {
         type: Object,
     },
+    branch : {
+        type: Object,
+    }
 });
 const currentDate = moment().format('YYYY-MM-DD');
 const branchObject = ref(JSON.parse(localStorage.getItem('selected_branch')));
 const userObject = ref(JSON.parse(localStorage.getItem('user')));
 const companyObject = ref(JSON.parse(localStorage.getItem('company')));
 var fullTextDate = ref(moment().format("LLLL"));
+
+console.log('branchObject', branchObject.value, props.branch.branch_name)
+
 const transactionObject = ref({
     transaction_code : '',
     item_transaction_type : 'SALE',
@@ -44,9 +50,9 @@ const transactionObject = ref({
     total_price : parseFloat(0.0),
     total_cost : parseFloat(0.0),
     supplier_id : 0,
-    branch_id : branchObject.value.id,
-    user_id : userObject.value.id,
-    company_id : companyObject.value.id,
+    branch_id : branchObject.value ? branchObject.value.id : props.branch.id,
+    user_id : userObject.value ? userObject.value.id : props.user.id,
+    company_id : companyObject.value ? companyObject.value.id : props.company.id,
     amt_received: 0.00,
     final_amt_received: 0.00,
     discount_type: 1,
@@ -78,7 +84,7 @@ onMounted (() => {
         <div style="width:100%;">
             <TransactionModal 
                 :transaction="transactionObject" 
-                :branchObject="branchObject" 
+                :branchObject="props.branch" 
                 :userDesignation="props.user.designation"
                 :isNotFromDialog="true"
                 @closeTransactionModal="()=>{}"

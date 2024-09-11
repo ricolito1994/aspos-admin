@@ -12,6 +12,7 @@ class DashboardController extends Controller
         return Inertia::render('Dashboard', [
             "user" => $user,
             "company" => $user?->company,
+            "branch" => $user?->selectedBranch,
         ]);
     }
 }

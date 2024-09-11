@@ -71,7 +71,9 @@ const userObject = ref(JSON.parse(localStorage.getItem('user')));
 
 const companyObject = ref(JSON.parse(localStorage.getItem('company')));
 
-const branchObject = ref(JSON.parse(localStorage.getItem('selected_branch')));
+const branchObject = ref(
+    JSON.parse(localStorage.getItem('selected_branch')) ? JSON.parse(localStorage.getItem('selected_branch')) : props.branchObject 
+);
 
 const transactionObject = reactive(props.transaction);
 
@@ -762,7 +764,7 @@ const keyBoardShortcuts = async (e) => {
             alertBox("Please chose products.");
             return;
         }
-
+        document.getElementById('form-amt').value = "";
         document.getElementById('form-amt').focus()
         e.preventDefault();
     }
