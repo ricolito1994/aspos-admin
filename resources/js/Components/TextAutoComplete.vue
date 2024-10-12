@@ -56,6 +56,10 @@ const bottomObserver = ref(null);
 
 const showResults = ref(false);
 
+const debounceRefresh = 1000;
+
+let timeout = null;
+
 let results = ref([]);
 
 let searchString = reactive(props.itmName);
@@ -83,7 +87,7 @@ const resultsStyleItem = reactive({
 });
 
 const searchItems = async (event) => {
-    isLoading.value = true;
+    //isLoading.value = true;
 
     if(event.keyCode !== 13) {
         showResults.value = true;
@@ -116,6 +120,14 @@ const loadMoreItems = async () => {
     } else {
         results.value = [...results.value, ...r];
     }
+}
+
+const debounceSearch = (event) => {
+    isLoading.value = true
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+        searchItems(event)
+    }, debounceRefresh);
 }
 
 
@@ -262,7 +274,7 @@ watch (() => props.itmName, (newVal) => {
             class="uppercase"
             label="INPUT YOUR TEXT HERE..."
             v-model="searchString" 
-            @keyup="searchItems" 
+            @keyup="debounceSearch" 
             :style="style ? style : 'width:100%;'"
             :disabled="disabled"
             ref="refSearchString"
