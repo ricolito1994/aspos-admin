@@ -113,7 +113,6 @@ const searchItems = async (event) => {
 const loadMoreItems = async () => {
     currentPage.value++;
     let res = await props.getData(1, encodeURIComponent(searchString), currentPage.value)
-    console.log(res)
     let r = res.data.res ? res.data.res : res.data;
     if (r.data) {
         results.value = [...results.value, ...r.data]
@@ -123,6 +122,7 @@ const loadMoreItems = async () => {
 }
 
 const debounceSearch = (event) => {
+    if(event.keyCode == 38 || event.keyCode == 40) return
     isLoading.value = true
     clearTimeout(timeout);
     timeout = setTimeout(() => {
@@ -208,11 +208,21 @@ const navigateItems = (scroll) => {
     dropdownResultsRef.value.scrollTop += scrollAmount;
 }
 
+const handleScroll = (e) => {
+    const container = dropdownResultsRef.value;
+    const bottomOfContainer =
+        container.scrollTop + container.clientHeight >= container.scrollHeight - 1;
+    if (bottomOfContainer) {
+        loadMoreItems();
+    }
+}
+
 
 let observer = null;
 
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
+    //observer = createObserver()
     event.on('TextAutoCompleteComponent:clearSearchText', (modelName) => {
         if (props.itemName == modelName) { 
             searchString = "";
@@ -248,14 +258,14 @@ onUnmounted(() => {
 });
 
 watch (() => showResults.value, (newVal) => {
-    console.log('newVal', newVal)
+    //console.log('newVal', newVal)
     if (newVal) {
         setTimeout(() => {
-            observer = createObserver();
+            //observer = createObserver();
         },1000);
     } else {
         if (observer) {
-           observer.disconnect();
+           //observer.disconnect();
         }
     }
 })

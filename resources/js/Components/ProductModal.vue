@@ -267,6 +267,7 @@ const onUpdateQuantityByTransaction = (transactionData) => {
         quantity : selproduct.quantity,
         remaining_balance : selproduct.remaining_balance
     })
+    //emit('onAddProduct')
     emit('onAddProduct', {
         product_code : product.product_code,
         remaining_balance:  selproduct.remaining_balance,
@@ -431,7 +432,7 @@ watch (priceList, (oldval, newval) => {
                                 <tr>
                                     <th>EQUIVALENT TO</th>
                                     <th>UNIT</th>
-                                    <th>DEFAULT</th>
+                                    <th style="width:5%;">DEF</th>
                                     <th>HEIRARCHY</th>
                                     <th>PRICE</th>
                                     <th>COST</th>
@@ -442,12 +443,12 @@ watch (priceList, (oldval, newval) => {
                                 <tr v-for="(unit, unitIndex) in price.unit" :key="unitIndex">
                                     <td>
                                         <span v-if="price.unit[unitIndex - 1]">
-                                            1 - <input  v-model="price.unit[unitIndex - 1].unit_name" type="text" style="width:100px;">&nbsp;=
+                                            1 - <input  v-model="price.unit[unitIndex - 1].unit_name" type="text" style="width:41%;">&nbsp;=
                                         </span>
                                         <span v-if="!price.unit[unitIndex - 1]">
-                                            1 - <input  v-model="unit.unit_name" type="text" style="width:100px;">&nbsp;=
+                                            1 - <input  v-model="unit.unit_name" type="text" style="width:41%;">&nbsp;=
                                         </span>
-                                        <input v-model="unit.parent_quantity" type="text" style="width:100px;">
+                                        <input v-model="unit.parent_quantity" type="text" style="width:41%;">
                                     </td>
                                     <td>
                                         <input v-model="unit.unit_name" type="text" >
@@ -456,15 +457,15 @@ watch (priceList, (oldval, newval) => {
                                         <input disabled v-model="unit.is_default" type="checkbox" >
                                     </td>
                                     <td>
-                                        <input v-model="unit.heirarchy" disabled type="text" style="width:100px;">
+                                        <input v-model="unit.heirarchy" disabled type="text" style="width:80%;">
                                     </td>
                                     <td>
-                                        <input v-model="unit.price_per_unit" type="text" style="width:100px;">
+                                        <input v-model="unit.price_per_unit" type="text" style="width:80%;">
                                     </td>
                                     <td>
-                                        <input v-model="unit.cost_per_unit" type="text" style="width:100px;">
+                                        <input v-model="unit.cost_per_unit" type="text" style="width:80%;">
                                     </td>
-                                    <td>
+                                    <td style="width:11%;">
                                         <PrimaryButton :additionalStyles="'background: #e17b7b;'" @click=removeUnit(priceIndex,unitIndex)>X</PrimaryButton>&nbsp;
                                         <PrimaryButton :additionalStyles="'background: #86e17b;'" @click=newUnit(priceIndex,unitIndex)>+</PrimaryButton>
                                     </td>

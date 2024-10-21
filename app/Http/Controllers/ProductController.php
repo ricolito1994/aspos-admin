@@ -110,10 +110,28 @@ class ProductController extends Controller
             $product['pricelist'] = Pricelist::where('product_id', $product->id)
                 ->with('unit')
                 ->get();
-            
+
+            $default_pl = collect($product['pricelist'])->first(function ($item) {
+                return $item['is_default'] == 1;
+            });
+            $default_unit = collect($default_pl['unit'])->first(function ($item) {
+                return $item['is_default'] == 1;
+            }); 
             //$product['transactions'] = $productTransactions;
-            $product['remaining_balance'] = 0;
-            $product['unit'] = '-';
+            if (isset($prod['id'])) {
+                $latestTransactions = TransactionDetail::where('product_id', $prod['id'])
+                    ->whereNull('is_pending_transaction')
+                    ->orderBy('created_at', 'DESC')
+                    ->get();
+                $product['remaining_balance'] = isset($latestTransactions[0]) ?  $latestTransactions[0]['remaining_balance'] : 0;
+                $product['unit_name'] = isset($latestTransactions[0]) ? $latestTransactions[0]['unit'] : 
+                    (isset($default_unit) ? $default_unit['unit_name'] : 'PIECE');
+                $product['transactions'] = $latestTransactions;
+            }
+            else {
+                $product['remaining_balance'] = 0;
+                $product['unit'] = 'PIECE';
+            }
             DB::commit();
             return response()->json($product, 200);
             
@@ -171,8 +189,8 @@ class ProductController extends Controller
                         ['heirarchy', $p['transactions'][0]['unit_id']],
                         ['branch_id', $user->selected_branch],
                     ])->first();
-                    $unitRemainingBal = $unit->unit_name;
-                    $unit_obj =  $unit;
+                    $unitRemainingBal = $unit ? $unit->unit_name : 'PIECE';
+                    $unit_obj = $unit ? $unit : [];
                 } else if (isset($p->pricelist[0])) {
                     $unit = Unit::where([
                         ['price_list_id', $p->pricelist[0]->id],
@@ -181,7 +199,7 @@ class ProductController extends Controller
                     ->first();
                     $unitRemainingBal = $unit ? $unit->unit_name : '-';
                     $unit_obj = $unit ? $unit : [];
-                } 
+                }
                 //$ppunit = (isset($unit_obj['price_per_unit']) ? $unit_obj['price_per_unit'] : '');
                 //$ppunit = $p->pricelist[0]->unit[0]->price_per_unit;
                 if(count($p->pricelist) > 0 && count($p->pricelist[0]->unit) > 0){

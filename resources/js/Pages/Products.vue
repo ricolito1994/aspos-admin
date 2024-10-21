@@ -27,6 +27,7 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import DataTable from '@/Components/DataTable.vue';
 import Modal from '@/Components/Modal.vue';
 import ProductModal from '@/Components/ProductModal.vue';
+import {event} from '@/Services/EventBus';
 
 const resultData = ref([]);
 const searchString = ref("");
@@ -107,21 +108,23 @@ const catchChangeBranch = async (branch) => {
 }
 
 const onAddProduct = (product) => {
-    if (product.isUpdateQty) {
+    /*if (product.isUpdateQty) {
         let indx = resultData.value.data.findIndex(x => x.product_code == product.product_code)
         if (indx > -1)
             resultData.value.data[indx]['remaining_balance'] = product.remaining_balance;
         return;
-    }
+    }*/
 
-    if (product.isUpdate) {
+    /*if (product.isUpdate) {
         resultData.value.unshift(product);
     } else {
         // update product
         let indx = resultData.value.data.findIndex(x => x.id == product.id)
         if (indx > -1)
             resultData.value.data[indx] = product;
-    }
+    }*/
+   //product['tableName'] = 'productsTable';
+   event.emit("DataTable:reloadTableData-productsTable", product)
 }
 
 const searchProducts = async ( reset ) => {
@@ -234,9 +237,11 @@ const tableHeaders = ref([
         <div style="width:100%;height:85%;">
             <DataTable 
                 @viewItemDetails=showProductModal 
+                @reloadTable="onAddProduct"
                 :tableHeaders="tableHeaders" 
                 :resultData="resultData" 
                 :getData="providePaginationData"
+                :tableName="'productsTable'"
             />
         </div>
     </AppLayout>

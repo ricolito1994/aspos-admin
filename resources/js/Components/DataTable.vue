@@ -5,6 +5,7 @@ import {
     watch 
 } from 'vue';
 import { providePaginationData } from '@/Services/ServerRequests'
+import {event} from '@/Services/EventBus';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 let props = defineProps({
@@ -16,14 +17,21 @@ let props = defineProps({
     },
     getData : {
         type: Function,
+    },
+    tableName : {
+        type: String,
+        default: "dt",
+        required: false,
     }
 })
 
-let emit = defineEmits(['viewItemDetails'])
+let emit = defineEmits(['viewItemDetails', 'reloadTableData'])
 
 const tableData = ref(null)
 
 const actions = ref ([]);
+
+const currentLink = ref ("");
 
 /* const paginate = (index) => {
     selectedPage.value = index;
@@ -42,10 +50,11 @@ const viewItemDetails = (data) => {
 
 const provideData = async (url) => {
     let res = [];
+    currentLink.value = url;
     if (!props.getData) {
         res = await providePaginationData(url);
     } else {
-        res = await props.getData(url);
+        res = await props.getData(url); 
     }
     tableData.value = res.data.res ? res.data.res : res.data;
 }
@@ -59,13 +68,19 @@ onMounted (() => {
     if (! props.resultData.data) {
         props.resultData.data = props.resultData
     }
+    event.on("DataTable:reloadTableData-"+props.tableName, (e) => {
+        console.log(e.tableName , props.tableName)
+        //if(e.tableName == props.tableName)
+        provideData(currentLink.value)
+    })
 });
 
 watch (
     () => props.resultData, 
     (newValue) => {
-        console.log('newValue', newValue)
+        console.log('newValue', newValue.links[1].url)
         tableData.value = newValue;
+        currentLink.value = newValue.links[1].url;
     }
 );
 

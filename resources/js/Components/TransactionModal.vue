@@ -732,6 +732,17 @@ const init = async () => {
     // console.log('init', userObject.value.id)
 }
 
+const focusQty = (transactionDetailIndex) => {
+    document.getElementById(`form-qty-${transactionDetailIndex}`).value = '';
+    //transactionDetails[transactionDetailIndex].quantity = 0;
+    changeQuantity(transactionDetailIndex)
+}
+
+const blurQty = (transactionDetailIndex) => {
+    document.getElementById(`form-qty-${transactionDetailIndex}`).value = transactionDetails[transactionDetailIndex].quantity
+    changeQuantity(transactionDetailIndex)
+}
+
 
 const keyBoardShortcuts = async (e) => {
     if (e.key =='F1') {
@@ -974,6 +985,8 @@ onUnmounted(()=>{
                         <input v-model="transactionDetail.quantity"
                             :id="`form-qty-${transactionDetailIndex}`"
                             @keyup="changeQuantity(transactionDetailIndex)" 
+                            @focus="focusQty(transactionDetailIndex)"
+                            @blur="blurQty(transactionDetailIndex)"
                             type="text" 
                             style="width:99%;"
                         />
